@@ -5,12 +5,15 @@ COMPILERFLAGS=-Wall
 CC=gcc
 LIBRARIES=
 INCLUDE=-I./SDK/CHeaders/XPLM
+HIDFILE=
+
 
 HOSTOS=$(shell uname | tr A-Z a-z)
 ifeq ($(HOSTOS),linux)
  LNFLAGS=-shared -rdynamic -nodefaultlibs -L.
  CFLAGS=$(COMPILERFLAGS) -DAPL=0 -DIBM=0 -DLIN=1 -DXPLM200=1
  LIBRARIES+=-lpthread
+ HIDFILE=linux/hid.c
 else
   HOSTOS=windows
   LNFLAGS=-m32 -Wl,-O1 -shared -L.
@@ -18,11 +21,12 @@ else
   LIBPATH+=-L".\SDK\Libraries\Win" -L".\lib"
   LIBRARIES+=-lsetupapi -lXPLM -lpthreadGC1
   INCLUDE+=-I./include
+  HIDFILE=windows/hid.c
 endif
 
 
 all:
-	$(CC) -c $(INCLUDE) $(CFLAGS) hid.c
+	$(CC) -c $(INCLUDE) $(CFLAGS) $(HIDFILE)
 	$(CC) -c $(INCLUDE) $(CFLAGS) utils.c
 	$(CC) -c $(INCLUDE) $(CFLAGS) log.c
 	$(CC) -c $(INCLUDE) $(CFLAGS) time.c
