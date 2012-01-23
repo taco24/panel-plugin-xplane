@@ -14,6 +14,7 @@ ifeq ($(HOSTOS),linux)
  CFLAGS=$(COMPILERFLAGS) -DAPL=0 -DIBM=0 -DLIN=1 -DXPLM200=1
  LIBRARIES+=-lpthread
  HIDFILE=linux/hid.c
+ INCLUDE+=-I./include
 else
   HOSTOS=windows
   LNFLAGS=-m32 -Wl,-O1 -shared -L.

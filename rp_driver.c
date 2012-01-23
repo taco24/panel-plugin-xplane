@@ -1,4 +1,4 @@
-#ifdef IBM
+#if IBM
 #include <windows.h>
 #else
 #include <unistd.h>
