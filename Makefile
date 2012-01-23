@@ -13,8 +13,9 @@ ifeq ($(HOSTOS),linux)
  LNFLAGS=-shared -rdynamic -nodefaultlibs -L.
  CFLAGS=$(COMPILERFLAGS) -DAPL=0 -DIBM=0 -DLIN=1 -DXPLM200=1
  LIBRARIES+=-lpthread
+ LIBRARIES+=`pkg-config libusb-1.0 libudev --libs`
  HIDFILE=linux/hid.c
- INCLUDE+=-I./include
+ INCLUDE+=-I./include `pkg-config libusb-1.0 --cflags`
 else
   HOSTOS=windows
   LNFLAGS=-m32 -Wl,-O1 -shared -L.
