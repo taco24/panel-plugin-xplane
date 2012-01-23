@@ -10,12 +10,11 @@ HIDFILE=
 
 HOSTOS=$(shell uname | tr A-Z a-z)
 ifeq ($(HOSTOS),linux)
- LNFLAGS=-shared -rdynamic -nodefaultlibs -L.
- CFLAGS=$(COMPILERFLAGS) -m32 -DAPL=0 -DIBM=0 -DLIN=1 -DXPLM200=1
- LIBRARIES+=-lpthread
- LIBRARIES+=`pkg-config libusb-1.0 libudev --libs`
+ LNFLAGS=-march=i386 -m32 -shared -rdynamic -nodefaultlibs -L.
+ CFLAGS=$(COMPILERFLAGS) -march=i386 -m32 -DAPL=0 -DIBM=0 -DLIN=1 -DXPLM200=1
+ LIBRARIES+=-lpthread -lrt
  HIDFILE=linux/hid.c
- INCLUDE+=-I./include `pkg-config libusb-1.0 --cflags`
+ INCLUDE+=-I./linux/include
 else
   HOSTOS=windows
   LNFLAGS=-m32 -Wl,-O1 -shared -L.
