@@ -149,10 +149,10 @@ PLUGIN_API int XPluginEnable(void) {
 PLUGIN_API void XPluginDisable(void) {
 	XPLMDebugString("-> CP: XPluginDisable\n");
 	gRpThreadData.stop = 1;
-#ifdef IBM
+#if IBM
 	Sleep(500);
 #else
-	sleep(50);
+	sleep(1);
 #endif
 }
 
