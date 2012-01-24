@@ -7,18 +7,19 @@
 #include <math.h>
 #include <stdint.h>
 #include <pthread.h>
-
 #include "XPLMDefs.h"
 #include "XPLMPlugin.h"
 #include "XPLMProcessing.h"
 #include "XPLMDataAccess.h"
 #include "XPLMUtilities.h"
 
+#include "defs.h"
 #include "panel_plugin.h"
 #include "settings.h"
 #include "properties.h"
 #include "log.h"
 #include "rp_controller.h"
+#include "mp_controller.h"
 
 // Radio Panel
 #define sRP_STDBY_COM1_FINE_DOWN_CR       "sim/radios/stby_com1_fine_down"
@@ -103,6 +104,12 @@ pthread_t gRpThread;
 int gRpThreadID = 1;
 int gRpThreadReturnCode = 0;
 
+pthread_t gMpController;
+struct thread_data gMpThreadData;
+pthread_t gMpThread;
+int gMpThreadID = 2;
+int gMpThreadReturnCode = 0;
+
 
 int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
@@ -133,6 +140,7 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 
 PLUGIN_API int XPluginEnable(void) {
 	XPLMDebugString("-> CP: XPluginEnable\n");
+	// Radio Panel
 	gRpThreadData.thread_id = gRpThreadID;
 	gRpThreadData.stop = 0;
 	gRpThreadReturnCode = pthread_create(&gRpThread, NULL, run,
@@ -140,8 +148,21 @@ PLUGIN_API int XPluginEnable(void) {
 	if (gRpThreadReturnCode) {
 		XPLMDebugString("-> CP: XPluginEnable: Could not start RpThread.\n");
 		return 0;
+	} else {
+		XPLMDebugString("-> CP: XPluginEnable: RpThread started.\n");
 	}
-	XPLMDebugString("-> CP: XPluginEnable: RpThread started.\n");
+
+	// Multi Panel
+	gMpThreadData.thread_id = gMpThreadID;
+	gMpThreadData.stop = 0;
+	gMpThreadReturnCode = pthread_create(&gMpThread, NULL, mpRun,
+			(void *) &gMpThreadData);
+	if (gMpThreadReturnCode) {
+		XPLMDebugString("-> CP: XPluginEnable: Could not start MpThread.\n");
+		return 0;
+	} else {
+		XPLMDebugString("-> CP: XPluginEnable: MpThread started.\n");
+	}
 
 	return 1;
 }
@@ -149,6 +170,7 @@ PLUGIN_API int XPluginEnable(void) {
 PLUGIN_API void XPluginDisable(void) {
 	XPLMDebugString("-> CP: XPluginDisable\n");
 	gRpThreadData.stop = 1;
+	gMpThreadData.stop = 1;
 #if IBM
 	Sleep(500);
 #else

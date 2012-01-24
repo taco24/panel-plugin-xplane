@@ -36,9 +36,11 @@ all:
 	$(CC) -c $(INCLUDE) $(CFLAGS) settings.c
 	$(CC) -c $(INCLUDE) $(CFLAGS) rp_driver.c
 	$(CC) -c $(INCLUDE) $(CFLAGS) rp_controller.c
+	$(CC) -c $(INCLUDE) $(CFLAGS) mp_driver.c
+	$(CC) -c $(INCLUDE) $(CFLAGS) mp_controller.c
 	$(CC) -c $(INCLUDE) $(CFLAGS) panel_plugin.c
 
-	$(CC) -o panel_plugin.xpl hid.o utils.o log.o properties.o settings.o rp_driver.o rp_controller.o time.o panel_plugin.o  $(WINDLLMAIN) $(LNFLAGS) $(LIBPATH) $(LIBRARIES)
+	$(CC) -o panel_plugin.xpl hid.o utils.o log.o properties.o settings.o rp_driver.o rp_controller.o mp_driver.o mp_controller.o time.o panel_plugin.o  $(WINDLLMAIN) $(LNFLAGS) $(LIBPATH) $(LIBRARIES)
 
 clean:
 	$(RM) *.o *.xpl
