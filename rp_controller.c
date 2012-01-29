@@ -9,16 +9,95 @@
 #include <stdint.h>
 #include "rp_controller.h"
 #include "rp_driver.h"
+#include "defs.h"
 #include "time.h"
 #include "log.h"
 #include "utils.h"
+
+#include "XPLMDefs.h"
+#include "XPLMPlugin.h"
+#include "XPLMProcessing.h"
+#include "XPLMDataAccess.h"
 #include "XPLMUtilities.h"
+
+// Radio panel
+enum RP_COMMANDS_MAP {
+    RP_CMD_EAT_EVENT = 0,
+    RP_CMD_PASS_EVENT = 1,
+	RP_CMD_STDBY_COM1_FINE_DOWN,
+	RP_CMD_STDBY_COM1_FINE_UP,
+	RP_CMD_STDBY_COM1_COARSE_DOWN,
+	RP_CMD_STDBY_COM1_COARSE_UP,
+	RP_CMD_ACTV_COM1_FINE_DOWN,
+	RP_CMD_ACTV_COM1_FINE_UP,
+	RP_CMD_ACTV_COM1_COARSE_DOWN,
+	RP_CMD_ACTV_COM1_COARSE_UP,
+	RP_CMD_COM1_STANDBY_FLIP,
+	RP_CMD_COM2_STANDBY_FLIP
+};
 
 static const int min_mainloop_time = 5000;
 static long last_mainloop_idle = 0;
-struct thread_data *gPtrThreadData;
+struct rp_thread_data *gPtrThreadData;
 static unsigned char buf[RP_IN_BUF_SIZE];
 static unsigned char writeBuf[RP_OUT_BUF_SIZE];
+static char tmp[100];
+
+
+/* RADIO PANEL Command Refs */
+XPLMCommandRef gRpStdbyCOM1FineDownCmdRef = NULL;
+XPLMCommandRef gRpStdbyCOM1FineUpCmdRef = NULL;
+XPLMCommandRef gRpStdbyCOM1CoarseDownCmdRef = NULL;
+XPLMCommandRef gRpStdbyCOM1CoarseUpCmdRef = NULL;
+XPLMCommandRef gRpActvCOM1FineDownCmdRef = NULL;
+XPLMCommandRef gRpActvCOM1FineUpCmdRef = NULL;
+XPLMCommandRef gRpActvCOM1CoarseDownCmdRef = NULL;
+XPLMCommandRef gRpActvCOM1CoarseUpCmdRef = NULL;
+
+/* RADIO PANEL Data Refs */
+XPLMDataRef gRpCOM1FreqHzDataRef = NULL;
+XPLMDataRef gRpCOM1StdbyFreqHzDataRef = NULL;
+
+uint32_t gRpTuningThresh = 4;
+uint32_t gRpUpperFineTuneUpCnt = 0;
+uint32_t gRpUpperFineTuneDownCnt = 0;
+uint32_t gRpUpperCoarseTuneUpCnt = 0;
+uint32_t gRpUpperCoarseTuneDownCnt = 0;
+
+uint32_t gRpCOM1StbyFreq = 0;
+
+
+int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
+                             XPLMCommandPhase  inPhase,
+                             void *            inRefcon) {
+	XPLMDebugString("-> CP: RadioPanelCommandHandler: start.\n");
+	char Buffer[256];
+	sprintf(Buffer,"Cmdh handler: 0x%08x, %d, 0x%08x\n", inCommand, inPhase, inRefcon);
+	XPLMDebugString(Buffer);
+	int status = CMD_PASS_EVENT;
+//	gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+
+ switch ((int)(inRefcon)) {
+		case RP_CMD_STDBY_COM1_FINE_DOWN:
+		case RP_CMD_STDBY_COM1_FINE_UP:
+		case RP_CMD_STDBY_COM1_COARSE_DOWN:
+		case RP_CMD_STDBY_COM1_COARSE_UP:
+			XPLMDebugString("-> CP: RadioPanelCommandHandler: COM1 changed.\n");
+			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+			break;
+		case RP_CMD_ACTV_COM1_FINE_DOWN:
+		case RP_CMD_ACTV_COM1_FINE_UP:
+		case RP_CMD_ACTV_COM1_COARSE_DOWN:
+		case RP_CMD_ACTV_COM1_COARSE_UP:
+			XPLMDebugString("-> CP: RadioPanelCommandHandler: COM1 changed.\n");
+			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+			break;
+		default:
+			break;
+ }
+
+ return status;
+}
 
 
 inline void rp_upper_led_update(uint32_t x, uint32_t y, uint32_t z, uint32_t r, uint8_t m[]) {
@@ -47,6 +126,61 @@ inline void rp_upper_led_update(uint32_t x, uint32_t y, uint32_t z, uint32_t r, 
     m[22] = 0x00;
 }
 
+int rp_process(uint32_t msg) {
+    sprintf(tmp, "-> CP: rp_controller.rp_process: msg: %d\n", msg);
+	XPLMDebugString(tmp);
+	int res = 0;
+    uint32_t upperKnob = msg & RP_READ_UPPER_KNOB_MODE_MASK;
+    uint32_t lowerKnob = msg & RP_READ_LOWER_KNOB_MODE_MASK;
+    uint32_t upperFineTuning = msg & RP_READ_UPPER_FINE_TUNING_MASK;
+    uint32_t upperCoarseTuning = msg & RP_READ_UPPER_COARSE_TUNING_MASK;
+    uint32_t lowerFineTuning = msg & RP_READ_LOWER_FINE_TUNING_MASK;
+    uint32_t lowerCoarseTuning = msg & RP_READ_LOWER_COARSE_TUNING_MASK;
+
+    if (upperCoarseTuning || upperFineTuning) {
+		if (upperCoarseTuning == RP_READ_UPPER_COARSE_RIGHT) {
+			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_COARSE_RIGHT.\n");
+			XPLMCommandOnce(gRpStdbyCOM1CoarseUpCmdRef);
+		} else if (upperCoarseTuning == RP_READ_UPPER_COARSE_LEFT) {
+			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_COARSE_LEFT.\n");
+			XPLMCommandOnce(gRpStdbyCOM1CoarseDownCmdRef);
+		} else if (upperFineTuning == RP_READ_UPPER_FINE_RIGHT) {
+			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_FINE_RIGHT.\n");
+			XPLMCommandOnce(gRpStdbyCOM1FineUpCmdRef);
+		} else if (upperFineTuning == RP_READ_UPPER_FINE_LEFT) {
+			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_FINE_LEFT.\n");
+			XPLMCommandOnce(gRpStdbyCOM1FineDownCmdRef);
+		}
+    }
+	return res;
+}
+
+void rp_init() {
+	XPLMDebugString("-> CP: rp_controller.rp_init.\n");
+	gRpStdbyCOM1FineDownCmdRef         = XPLMCreateCommand(sRP_STDBY_COM1_FINE_DOWN_CR, "COM1 Fine down");
+	gRpStdbyCOM1FineUpCmdRef           = XPLMCreateCommand(sRP_STDBY_COM1_FINE_UP_CR, "COM1 Fine up");
+	gRpStdbyCOM1CoarseDownCmdRef       = XPLMCreateCommand(sRP_STDBY_COM1_COARSE_DOWN_CR, "COM1 Coarse down");
+	gRpStdbyCOM1CoarseUpCmdRef         = XPLMCreateCommand(sRP_STDBY_COM1_COARSE_UP_CR, "COM1 Coarse up");
+	gRpActvCOM1FineDownCmdRef         = XPLMCreateCommand(sRP_ACTV_COM1_FINE_DOWN_CR, "COM1 Fine down");
+	gRpActvCOM1FineUpCmdRef           = XPLMCreateCommand(sRP_ACTV_COM1_FINE_UP_CR, "COM1 Fine up");
+	gRpActvCOM1CoarseDownCmdRef       = XPLMCreateCommand(sRP_ACTV_COM1_COARSE_DOWN_CR, "COM1 Coarse down");
+	gRpActvCOM1CoarseUpCmdRef         = XPLMCreateCommand(sRP_ACTV_COM1_COARSE_UP_CR, "COM1 Coarse up");
+
+    XPLMRegisterCommandHandler(gRpStdbyCOM1FineDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_DOWN);
+    XPLMRegisterCommandHandler(gRpStdbyCOM1FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_UP);
+    XPLMRegisterCommandHandler(gRpStdbyCOM1CoarseDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_COARSE_DOWN);
+    XPLMRegisterCommandHandler(gRpStdbyCOM1CoarseUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_COARSE_UP);
+    XPLMRegisterCommandHandler(gRpActvCOM1FineDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_FINE_DOWN);
+    XPLMRegisterCommandHandler(gRpActvCOM1FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_FINE_UP);
+    XPLMRegisterCommandHandler(gRpActvCOM1CoarseDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_COARSE_DOWN);
+    XPLMRegisterCommandHandler(gRpActvCOM1CoarseUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_COARSE_UP);
+
+	gRpCOM1FreqHzDataRef        = XPLMFindDataRef(sRP_COM1_FREQ_HZ_DR);
+    gRpCOM1StdbyFreqHzDataRef   = XPLMFindDataRef(sRP_COM1_STDBY_FREQ_HZ_DR);
+
+    gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+}
+
 void *run(void *ptr_thread_data) {
 	int counter = 0;
 	int counter2 = 0;
@@ -56,7 +190,9 @@ void *run(void *ptr_thread_data) {
 	uint32_t tmp4 = 0;
 	int inReportBytesCount = 0;
 
-	gPtrThreadData = (struct thread_data *) ptr_thread_data;
+	rp_init();
+
+	gPtrThreadData = (struct rp_thread_data *) ptr_thread_data;
 
 	panel_open();
 	XPLMDebugString("-> CP: rp_controller.run: panel opened.\n");
@@ -67,19 +203,27 @@ void *run(void *ptr_thread_data) {
 		long loop_start_time = sys_time_clock_get_time_usec();
 
 		///////////////////////////////////////////////////////////////////////////
-		/// CRITICAL FAST 200 Hz functions
+		/// CRITICAL FAST 1000 Hz functions
 		///////////////////////////////////////////////////////////////////////////
-		if (us_run_every(5000, COUNTER3, loop_start_time)) {
+		if (us_run_every(1000, COUNTER3, loop_start_time)) {
 			// read/write board
 			counter++;
-			tmp1 = dec2bcd(counter % 1000, 5);
-			tmp2 = dec2bcd(counter % 1000000, 5);
+			tmp1 = dec2bcd(counter % 100000, 5);
+			//tmp2 = dec2bcd(counter % 1000000, 5);
+			tmp2 = dec2bcd(gRpCOM1StbyFreq, 5);
 			tmp3 = dec2bcd(counter2 % 1000000, 5);
 			tmp4 = dec2bcd(counter2 % 1000000, 5);
 			rp_upper_led_update(tmp1, tmp2, tmp3, tmp4, writeBuf);
 			inReportBytesCount = panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
+			    sprintf(tmp, "-> CP: rp_controller.run: msg: %#0x,%#0x,%#0x\n", buf[2], buf[1], buf[0]);
+				XPLMDebugString(tmp);
 				counter2++;
+				uint32_t msg = 0;
+				msg += buf[2] << 16;
+				msg += buf[1] << 8;
+				msg += buf[0];
+				rp_process(msg);
 			}
 			panel_write(writeBuf);
 		}

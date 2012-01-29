@@ -1,7 +1,21 @@
 #ifndef DEFS_H_
 #define DEFS_H_
 
+// CommandHandler pre-event and post-event designators
+#define CMD_HNDLR_PROLOG (1)
+#define CMD_HNDLR_EPILOG (0)
+
+#define CMD_EAT_EVENT    (0)
+#define CMD_PASS_EVENT   (1)
+
+
 struct thread_data {
+	int isRunning;  // is calculation finished
+	int thread_id; 	// id of the thread
+	int stop;       // stop thread
+};
+
+struct rp_thread_data {
 	int isRunning;  // is calculation finished
 	int thread_id; 	// id of the thread
 	int stop;       // stop thread

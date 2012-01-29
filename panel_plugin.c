@@ -21,85 +21,15 @@
 #include "rp_controller.h"
 #include "mp_controller.h"
 
-// Radio Panel
-#define sRP_STDBY_COM1_FINE_DOWN_CR       "sim/radios/stby_com1_fine_down"
-#define sRP_STDBY_COM1_FINE_UP_CR         "sim/radios/stby_com1_fine_up"
-#define sRP_STDBY_COM1_COARSE_DOWN_CR     "sim/radios/stby_com1_coarse_down"
-#define sRP_STDBY_COM1_COARSE_UP_CR       "sim/radios/stby_com1_coarse_up"
-
-#define sRP_STDBY_COM2_FINE_DOWN_CR       "sim/radios/stby_com2_fine_down"
-#define sRP_STDBY_COM2_FINE_UP_CR         "sim/radios/stby_com2_fine_up"
-#define sRP_STDBY_COM2_COARSE_DOWN_CR     "sim/radios/stby_com2_coarse_down"
-#define sRP_STDBY_COM2_COARSE_UP_CR       "sim/radios/stby_com2_coarse_up"
-
-#define sRP_COM1_STANDBY_FLIP_CR          "sim/radios/com1_standy_flip"
-#define sRP_COM2_STANDBY_FLIP_CR          "sim/radios/com2_standy_flip"
-
-#define sRP_COM1_FREQ_HZ_DR               "sim/cockpit/radios/com1_freq_hz"
-#define sRP_COM2_FREQ_HZ_DR               "sim/cockpit/radios/com2_freq_hz"
-#define sRP_COM1_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/com1_stdby_freq_hz"
-#define sRP_COM2_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/com2_stdby_freq_hz"
-
-#define CMD_HANDLER_PROLOG                (1)
-#define CMD_HANDLER_EPILOG                (0)
-
-int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
-                             XPLMCommandPhase  inPhase,
-                             void*             inRefcon);
-
-float RadioPanelFlightLoopCallback(float inElapsedSinceLastCall,
-                                   float inElapsedTimeSinceLastFlightLoop,
-                                   int inCounter,
-                                   void* inRefcon);
-
 enum {
     PLUGIN_PLANE_ID = 0
-};
-
-// Radio panel
-enum {
-    RP_CMD_EAT_EVENT = 0,
-    RP_CMD_PASS_EVENT = 1,
-	RP_CMD_STDBY_COM1_FINE_DOWN,
-	RP_CMD_STDBY_COM1_FINE_UP,
-	RP_CMD_STDBY_COM1_COARSE_DOWN,
-	RP_CMD_STDBY_COM1_COARSE_UP,
-	RP_CMD_STDBY_COM2_FINE_DOWN,
-	RP_CMD_STDBY_COM2_FINE_UP,
-	RP_CMD_STDBY_COM2_COARSE_DOWN,
-	RP_CMD_STDBY_COM2_COARSE_UP,
-	RP_CMD_COM1_STANDBY_FLIP,
-	RP_CMD_COM2_STANDBY_FLIP
 };
 
 // Flightloop Callback INterval
 static const float FL_CB_INTERVAL = -1.0;
 
-/* RADIO PANEL Command Refs */
-XPLMCommandRef gRpStdbyCOM1FineDownCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM1FineUpCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM1CoarseDownCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM1CoarseUpCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM2FineDownCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM2FineUpCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM2CoarseDownCmdRef = NULL;
-XPLMCommandRef gRpStdbyCOM2CoarseUpCmdRef = NULL;
-
-/* RADIO PANEL Data Refs */
-XPLMDataRef gRpCOM1FreqHzDataRef = NULL;
-XPLMDataRef gRpCOM2FreqHzDataRef = NULL;
-XPLMDataRef gRpCOM1StdbyFreqHzDataRef = NULL;
-XPLMDataRef gRpCOM2StdbyFreqHzDataRef = NULL;
-
-
-uint32_t gRpTuningThresh = 4;
-uint32_t gRpUpperFineTuneUpCnt = 0;
-uint32_t gRpUpperFineTuneDownCnt = 0;
-uint32_t gRpUpperCoarseTuneUpCnt = 0;
-uint32_t gRpUpperCoarseTuneDownCnt = 0;
-
 pthread_t gRpController;
-struct thread_data gRpThreadData;
+struct rp_thread_data gRpThreadData;
 pthread_t gRpThread;
 int gRpThreadID = 1;
 int gRpThreadReturnCode = 0;
@@ -111,17 +41,11 @@ int gMpThreadID = 2;
 int gMpThreadReturnCode = 0;
 
 
-int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
-                             XPLMCommandPhase  inPhase,
-                             void*             inRefcon) {
-	return 1;
-}
-
 float RadioPanelFlightLoopCallback(float   inElapsedSinceLastCall,
                                    float   inElapsedTimeSinceLastFlightLoop,
                                    int     inCounter,
                                    void*   inRefcon) {
-    return 1.0;
+    return -1.0; // call again next loop;
 }
 
 PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
@@ -129,18 +53,18 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 	 * plugin to the plugin-system. */
 
 	strcpy(outName, "X-Plane Panel Controller");
-	strcpy(outSig, "colomboard.flapindicator");
-	strcpy(outDesc, "colomboard 12.01.22");
+	strcpy(outSig, "panel.saitek");
+	strcpy(outDesc, "panel 12.01.22");
 
     XPLMRegisterFlightLoopCallback(RadioPanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
 
-    XPLMDebugString("-> CP: XPluginStart\n");
+	XPLMDebugString("-> CP: XPluginStart\n");
 	return 1;
 }
 
 PLUGIN_API int XPluginEnable(void) {
 	XPLMDebugString("-> CP: XPluginEnable\n");
-	// Radio Panel
+
 	gRpThreadData.thread_id = gRpThreadID;
 	gRpThreadData.stop = 0;
 	gRpThreadReturnCode = pthread_create(&gRpThread, NULL, run,
