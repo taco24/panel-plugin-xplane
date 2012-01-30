@@ -59,8 +59,13 @@ int mp_panel_open() {
 
 int mp_panel_write(unsigned char buf[]) {
 	int res = 0;
+	int i = 0;
+	unsigned char tmpBuffer[MP_OUT_BUF_SIZE];
+	for (i = 0; i < MP_OUT_BUF_SIZE; i++) {
+		tmpBuffer[i] = buf[i];
+	}
 	if (mpHandle) {
-		res = hid_send_feature_report(mpHandle, buf,
+		res = hid_send_feature_report(mpHandle, tmpBuffer,
 				MP_OUT_BUF_SIZE);
 		if (res < 0) {
 		    sprintf(tmp, "-> CP: mp_driver.panel_write: Error: %ls\n", hid_error(mpHandle));

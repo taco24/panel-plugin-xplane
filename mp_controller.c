@@ -20,7 +20,7 @@
 #include "XPLMUtilities.h"
 
 // Radio panel
-enum MP_COMMANDS_MAP {
+enum {
     MP_ALT_UP_CMD_MSG,
     MP_ALT_DN_CMD_MSG = MP_ALT_UP_CMD_MSG + 1,
     MP_VS_UP_CMD_MSG,
@@ -33,13 +33,14 @@ enum MP_COMMANDS_MAP {
     MP_CRS_DN_CMD_MSG = MP_CRS_UP_CMD_MSG + 1
 };
 
-enum MP_INDICATOR_KNOB {
-	MP_KNOB_ALT = 0,
-	MP_KNOB_VS = 1,
-	MP_KNOB_IAS = 2,
-	MP_KNOB_HDG = 3,
-	MP_KNOB_CRS = 4
+enum {
+	MP_KNOB_ALT,
+	MP_KNOB_VS,
+	MP_KNOB_IAS,
+	MP_KNOB_HDG,
+	MP_KNOB_CRS
 };
+
 static const int min_mainloop_time = 5000;
 static long last_mainloop_idle = 0;
 static struct thread_data *gPtrThreadData;
@@ -60,7 +61,6 @@ XPLMCommandRef gMpObsHsiDnCmdRef = NULL;
 XPLMCommandRef gMpObsHsiUpCmdRef = NULL;
 
 /* MULTI PANEL Data Refs */
-XPLMDataRef gMpAltDataRef = NULL;
 XPLMDataRef gMpAltHoldFtDataRef = NULL;
 XPLMDataRef gMpVrtVelDataRef = NULL;
 XPLMDataRef gMpArspdDataRef = NULL;
@@ -91,28 +91,23 @@ int MultiPanelCommandHandler(XPLMCommandRef    inCommand,
  switch ((int)(inRefcon)) {
 		case MP_ALT_UP_CMD_MSG:
 		case MP_ALT_DN_CMD_MSG:
-			XPLMDebugString("-> CP: MultiPanelCommandHandler: ALT changed.\n");
-			gMpAlt = (XPLMGetDatai(gMpAltDataRef));
+		    gMpAlt = round(XPLMGetDataf(gMpAltHoldFtDataRef));
 			break;
 		case MP_VS_UP_CMD_MSG:
 		case MP_VS_DN_CMD_MSG:
-			XPLMDebugString("-> CP: MultiPanelCommandHandler: VS changed.\n");
-			gMpVS = (XPLMGetDatai(gMpVrtVelDataRef));
+			gMpVS = round(XPLMGetDataf(gMpVrtVelDataRef));
 			break;
 		case MP_IAS_UP_CMD_MSG:
 		case MP_IAS_DN_CMD_MSG:
-			XPLMDebugString("-> CP: MultiPanelCommandHandler: IAS changed.\n");
-			gMpIAS = (XPLMGetDatai(gMpArspdDataRef));
+			gMpIAS = round(XPLMGetDataf(gMpArspdDataRef));
 			break;
 		case MP_HDG_UP_CMD_MSG:
 		case MP_HDG_DN_CMD_MSG:
-			XPLMDebugString("-> CP: MultiPanelCommandHandler: HDG changed.\n");
-			gMpHDG = (XPLMGetDatai(gMpHdgMagDataRef));
+			gMpHDG = round(XPLMGetDataf(gMpHdgMagDataRef));
 			break;
 		case MP_CRS_UP_CMD_MSG:
 		case MP_CRS_DN_CMD_MSG:
-			XPLMDebugString("-> CP: MultiPanelCommandHandler: CRS changed.\n");
-			gMpCRS = (XPLMGetDatai(gMpHsiSrcSelPltDataRef));
+			gMpCRS = round(XPLMGetDataf(gMpHsiSrcSelPltDataRef));
 			break;
 		default:
 			break;
@@ -137,8 +132,8 @@ inline void mp_led_update(uint32_t x, uint32_t y, uint32_t s, uint8_t m[]) {
 }
 
 int mp_process(uint32_t msg) {
-    sprintf(tmp, "-> CP: mp_controller.mp_process: msg: %d\n", msg);
-	XPLMDebugString(tmp);
+//    sprintf(tmp, "-> CP: mp_controller.mp_process: msg: %d\n", msg);
+//	XPLMDebugString(tmp);
 	int res = 0;
     uint32_t readKnob = msg & MP_READ_KNOB_MODE_MASK;
     uint32_t readTuning = msg & MP_READ_TUNING_MASK;
@@ -261,12 +256,43 @@ void *mpRun(void *ptr_thread_data) {
 		if (us_run_every(10000, COUNTER5, loop_start_time)) {
 			// read/write board
 			counter++;
+			inReportBytesCount = mp_panel_read_non_blocking(buf);
+			if (inReportBytesCount > 0) {
+//			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
+//				XPLMDebugString(tmp);
+				counter2++;
+				uint32_t msg = 0;
+				msg += buf[2] << 16;
+				msg += buf[1] << 8;
+				msg += buf[0];
+				mp_process(msg);
+			}
+		}
+		///////////////////////////////////////////////////////////////////////////
+
+		///////////////////////////////////////////////////////////////////////////
+		/// Update Panel. NON-CRITICAL 20 Hz functions:
+		///////////////////////////////////////////////////////////////////////////
+		else if (us_run_every(50000, COUNTER6, loop_start_time)) {
+			// Update local DataRefs.
+			mp_update_datarefs();
+			// update Panel.
+			inReportBytesCount = mp_panel_read_non_blocking(buf);
+			if (inReportBytesCount > 0) {
+//			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
+//				XPLMDebugString(tmp);
+				uint32_t msg = 0;
+				msg += buf[2] << 16;
+				msg += buf[1] << 8;
+				msg += buf[0];
+				mp_process(msg);
+			}
 			uint32_t pos_negativ = MP_LED_PLUS_SIGN;
 			switch (gIndicatorKnob) {
 			case MP_KNOB_ALT:
 			case MP_KNOB_VS:
-				tmp1 = dec2bcd(gMpAlt, 5) | 0xAAA00000;
-				tmp2 = dec2bcd(abs(gMpVS), 4) | 0xAAAA0000;
+				tmp1 = dec2bcd(gMpAlt, 5);
+				tmp2 = dec2bcd(abs(gMpVS), 4);
 				if (gMpVS >= 0) {
 					pos_negativ = MP_LED_PLUS_SIGN;
 				} else {
@@ -289,38 +315,6 @@ void *mpRun(void *ptr_thread_data) {
 				break;
 			}
 			mp_led_update(tmp1, tmp2, pos_negativ, writeBuf);
-			inReportBytesCount = mp_panel_read_non_blocking(buf);
-			if (inReportBytesCount > 0) {
-//			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
-//				XPLMDebugString(tmp);
-				counter2++;
-				uint32_t msg = 0;
-				msg += buf[2] << 16;
-				msg += buf[1] << 8;
-				msg += buf[0];
-				mp_process(msg);
-			}
-			mp_panel_write(writeBuf);
-		}
-		///////////////////////////////////////////////////////////////////////////
-
-		///////////////////////////////////////////////////////////////////////////
-		/// Update Panel. NON-CRITICAL 20 Hz functions:
-		///////////////////////////////////////////////////////////////////////////
-		else if (us_run_every(50000, COUNTER6, loop_start_time)) {
-			// Update local DataRefs.
-			mp_update_datarefs();
-			// update Panel.
-			inReportBytesCount = mp_panel_read_non_blocking(buf);
-			if (inReportBytesCount > 0) {
-//			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
-//				XPLMDebugString(tmp);
-				uint32_t msg = 0;
-				msg += buf[2] << 16;
-				msg += buf[1] << 8;
-				msg += buf[0];
-				mp_process(msg);
-			}
 			mp_panel_write(writeBuf);
 		}
 		///////////////////////////////////////////////////////////////////////////
@@ -334,9 +328,9 @@ void *mpRun(void *ptr_thread_data) {
 
 		// wait 1 milliseconds
 #if IBM
-		Sleep(1);
+		Sleep(SLEEP_TIME);
 #else
-		usleep(10);
+		usleep(SLEEP_TIME);
 #endif
 	}
 	mp_panel_close();

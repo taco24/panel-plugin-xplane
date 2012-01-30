@@ -265,9 +265,9 @@ void *rpRun(void *ptr_thread_data) {
 
 		// wait 1 milliseconds
 #if IBM
-		Sleep(1);
+		Sleep(SLEEP_TIME);
 #else
-		usleep(10);
+		usleep(SLEEP_TIME);
 #endif
 	}
 	panel_close();

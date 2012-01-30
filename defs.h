@@ -8,6 +8,11 @@
 #define CMD_EAT_EVENT    (0)
 #define CMD_PASS_EVENT   (1)
 
+#if IBM
+#define SLEEP_TIME       (5)
+#else
+#define SLEEP_TIME       (5000)
+#endif
 
 struct thread_data {
 	int isRunning;  // is calculation finished
