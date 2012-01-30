@@ -22,8 +22,6 @@
 
 // Radio panel
 enum RP_COMMANDS_MAP {
-    RP_CMD_EAT_EVENT = 0,
-    RP_CMD_PASS_EVENT = 1,
 	RP_CMD_STDBY_COM1_FINE_DOWN = 123,
 	RP_CMD_STDBY_COM1_FINE_UP = 124,
 	RP_CMD_STDBY_COM1_COARSE_DOWN = 125,
@@ -59,24 +57,17 @@ XPLMCommandRef gRpCOM1StbyFlipCmdRef = NULL;
 XPLMDataRef gRpCOM1FreqHzDataRef = NULL;
 XPLMDataRef gRpCOM1StdbyFreqHzDataRef = NULL;
 
-uint32_t gRpTuningThresh = 4;
-uint32_t gRpUpperFineTuneUpCnt = 0;
-uint32_t gRpUpperFineTuneDownCnt = 0;
-uint32_t gRpUpperCoarseTuneUpCnt = 0;
-uint32_t gRpUpperCoarseTuneDownCnt = 0;
-
 uint32_t gRpCOM1StbyFreq = 0;
 
 
 int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
                              void *            inRefcon) {
-	XPLMDebugString("-> CP: RadioPanelCommandHandler: start.\n");
-	char Buffer[256];
-	sprintf(Buffer,"Cmdh handler: 0x%08x, %d, 0x%08x\n", inCommand, inPhase, inRefcon);
-	XPLMDebugString(Buffer);
+//	XPLMDebugString("-> CP: RadioPanelCommandHandler: start.\n");
+//	char Buffer[256];
+//	sprintf(Buffer,"Cmdh handler: 0x%08x, %d, 0x%08x\n", inCommand, inPhase, inRefcon);
+//	XPLMDebugString(Buffer);
 	int status = CMD_PASS_EVENT;
-//	gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
 
  switch ((int)(inRefcon)) {
 		case RP_CMD_STDBY_COM1_FINE_DOWN:
@@ -166,9 +157,6 @@ int rp_process(uint32_t msg) {
 }
 
 void rp_update_datarefs() {
-	gRpCOM1FreqHzDataRef        = XPLMFindDataRef(sRP_COM1_FREQ_HZ_DR);
-    gRpCOM1StdbyFreqHzDataRef   = XPLMFindDataRef(sRP_COM1_STDBY_FREQ_HZ_DR);
-
     gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
 }
 
@@ -200,7 +188,7 @@ void rp_init() {
     gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
 }
 
-void *run(void *ptr_thread_data) {
+void *rpRun(void *ptr_thread_data) {
 	int counter = 0;
 	int counter2 = 0;
 	uint32_t tmp1 = 0;
@@ -222,9 +210,9 @@ void *run(void *ptr_thread_data) {
 		long loop_start_time = sys_time_clock_get_time_usec();
 
 		///////////////////////////////////////////////////////////////////////////
-		/// Read panel for new messages. CRITICAL FAST 1000 Hz functions
+		/// Read panel for new messages. CRITICAL FAST 100 Hz functions
 		///////////////////////////////////////////////////////////////////////////
-		if (us_run_every(1000, COUNTER1, loop_start_time)) {
+		if (us_run_every(10000, COUNTER1, loop_start_time)) {
 			// read/write board
 			counter++;
 			tmp1 = dec2bcd(counter % 100000, 5);
@@ -248,13 +236,22 @@ void *run(void *ptr_thread_data) {
 		///////////////////////////////////////////////////////////////////////////
 
 		///////////////////////////////////////////////////////////////////////////
-		/// Update Panel. NON-CRITICAL 100 Hz functions:
+		/// Update Panel. NON-CRITICAL 20 Hz functions:
 		///////////////////////////////////////////////////////////////////////////
-		if (us_run_every(10000, COUNTER2, loop_start_time)) {
+		else if (us_run_every(50000, COUNTER2, loop_start_time)) {
 			// Update local DataRefs.
 			rp_update_datarefs();
 			// update Panel.
 			inReportBytesCount = panel_read_non_blocking(buf);
+			if (inReportBytesCount > 0) {
+//			    sprintf(tmp, "-> CP: rp_controller.run: msg: %#0x,%#0x,%#0x\n", buf[2], buf[1], buf[0]);
+//				XPLMDebugString(tmp);
+				uint32_t msg = 0;
+				msg += buf[2] << 16;
+				msg += buf[1] << 8;
+				msg += buf[0];
+				rp_process(msg);
+			}
 			panel_write(writeBuf);
 		}
 		///////////////////////////////////////////////////////////////////////////

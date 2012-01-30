@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-extern void *run(void *ptr_thread_data);
+extern void *rpRun(void *ptr_thread_data);
 
 // Radio Panel
 #define sRP_STDBY_COM1_FINE_DOWN_CR       "sim/radios/stby_com1_fine_down"

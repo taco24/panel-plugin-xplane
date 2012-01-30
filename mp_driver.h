@@ -23,6 +23,7 @@
 #define MP_READ_KNOB_IAS            (0x00000004)
 #define MP_READ_KNOB_HDG            (0x00000008)
 #define MP_READ_KNOB_CRS            (0x00000010)
+#define MP_READ_TUNING_MASK         (0x00000060)
 #define MP_READ_TUNING_RIGHT        (0x00000020)
 #define MP_READ_TUNING_LEFT         (0x00000040)
 #define MP_READ_AP_BTN              (0x00000080)
@@ -41,6 +42,8 @@
 #define MP_READ_TRIM_UP             (0x00080000)
 #define MP_READ_NOMSG               (0xFFFFFFFF)
 
+#define MP_LED_PLUS_SIGN    (0x0A)
+#define MP_LED_MINUS_SIGN   (0x0E)
 
 extern int mp_panel_open();
 extern int mp_panel_write(unsigned char *buf);

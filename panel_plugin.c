@@ -41,7 +41,7 @@ int gMpThreadID = 2;
 int gMpThreadReturnCode = 0;
 
 
-float RadioPanelFlightLoopCallback(float   inElapsedSinceLastCall,
+float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
                                    float   inElapsedTimeSinceLastFlightLoop,
                                    int     inCounter,
                                    void*   inRefcon) {
@@ -56,7 +56,7 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 	strcpy(outSig, "panel.saitek");
 	strcpy(outDesc, "panel 12.01.22");
 
-    XPLMRegisterFlightLoopCallback(RadioPanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
+    XPLMRegisterFlightLoopCallback(PanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
 
 	XPLMDebugString("-> CP: XPluginStart\n");
 	return 1;
@@ -67,7 +67,7 @@ PLUGIN_API int XPluginEnable(void) {
 
 	gRpThreadData.thread_id = gRpThreadID;
 	gRpThreadData.stop = 0;
-	gRpThreadReturnCode = pthread_create(&gRpThread, NULL, run,
+	gRpThreadReturnCode = pthread_create(&gRpThread, NULL, rpRun,
 			(void *) &gRpThreadData);
 	if (gRpThreadReturnCode) {
 		XPLMDebugString("-> CP: XPluginEnable: Could not start RpThread.\n");
@@ -103,7 +103,7 @@ PLUGIN_API void XPluginDisable(void) {
 }
 
 PLUGIN_API void XPluginStop(void) {
-	XPLMUnregisterFlightLoopCallback(RadioPanelFlightLoopCallback, NULL);
+	XPLMUnregisterFlightLoopCallback(PanelFlightLoopCallback, NULL);
 	XPLMDebugString("-> CP: XPluginStop\n");
 }
 
