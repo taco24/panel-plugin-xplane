@@ -24,10 +24,10 @@
 enum RP_COMMANDS_MAP {
     RP_CMD_EAT_EVENT = 0,
     RP_CMD_PASS_EVENT = 1,
-	RP_CMD_STDBY_COM1_FINE_DOWN,
-	RP_CMD_STDBY_COM1_FINE_UP,
-	RP_CMD_STDBY_COM1_COARSE_DOWN,
-	RP_CMD_STDBY_COM1_COARSE_UP,
+	RP_CMD_STDBY_COM1_FINE_DOWN = 123,
+	RP_CMD_STDBY_COM1_FINE_UP = 124,
+	RP_CMD_STDBY_COM1_COARSE_DOWN = 125,
+	RP_CMD_STDBY_COM1_COARSE_UP = 126,
 	RP_CMD_ACTV_COM1_FINE_DOWN,
 	RP_CMD_ACTV_COM1_FINE_UP,
 	RP_CMD_ACTV_COM1_COARSE_DOWN,
@@ -53,6 +53,7 @@ XPLMCommandRef gRpActvCOM1FineDownCmdRef = NULL;
 XPLMCommandRef gRpActvCOM1FineUpCmdRef = NULL;
 XPLMCommandRef gRpActvCOM1CoarseDownCmdRef = NULL;
 XPLMCommandRef gRpActvCOM1CoarseUpCmdRef = NULL;
+XPLMCommandRef gRpCOM1StbyFlipCmdRef = NULL;
 
 /* RADIO PANEL Data Refs */
 XPLMDataRef gRpCOM1FreqHzDataRef = NULL;
@@ -90,6 +91,10 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
 		case RP_CMD_ACTV_COM1_COARSE_DOWN:
 		case RP_CMD_ACTV_COM1_COARSE_UP:
 			XPLMDebugString("-> CP: RadioPanelCommandHandler: COM1 changed.\n");
+			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+			break;
+		case RP_CMD_COM1_STANDBY_FLIP:
+			XPLMDebugString("-> CP: RadioPanelCommandHandler: COM1 fliped.\n");
 			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
 			break;
 		default:
@@ -136,6 +141,7 @@ int rp_process(uint32_t msg) {
     uint32_t upperCoarseTuning = msg & RP_READ_UPPER_COARSE_TUNING_MASK;
     uint32_t lowerFineTuning = msg & RP_READ_LOWER_FINE_TUNING_MASK;
     uint32_t lowerCoarseTuning = msg & RP_READ_LOWER_COARSE_TUNING_MASK;
+    uint32_t upperStby = msg & RP_READ_UPPER_ACT_STBY;
 
     if (upperCoarseTuning || upperFineTuning) {
 		if (upperCoarseTuning == RP_READ_UPPER_COARSE_RIGHT) {
@@ -152,19 +158,31 @@ int rp_process(uint32_t msg) {
 			XPLMCommandOnce(gRpStdbyCOM1FineDownCmdRef);
 		}
     }
+    if (upperStby) {
+		XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_FINE_RIGHT.\n");
+		XPLMCommandOnce(gRpCOM1StbyFlipCmdRef);
+    }
 	return res;
+}
+
+void rp_update_datarefs() {
+	gRpCOM1FreqHzDataRef        = XPLMFindDataRef(sRP_COM1_FREQ_HZ_DR);
+    gRpCOM1StdbyFreqHzDataRef   = XPLMFindDataRef(sRP_COM1_STDBY_FREQ_HZ_DR);
+
+    gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
 }
 
 void rp_init() {
 	XPLMDebugString("-> CP: rp_controller.rp_init.\n");
-	gRpStdbyCOM1FineDownCmdRef         = XPLMCreateCommand(sRP_STDBY_COM1_FINE_DOWN_CR, "COM1 Fine down");
-	gRpStdbyCOM1FineUpCmdRef           = XPLMCreateCommand(sRP_STDBY_COM1_FINE_UP_CR, "COM1 Fine up");
-	gRpStdbyCOM1CoarseDownCmdRef       = XPLMCreateCommand(sRP_STDBY_COM1_COARSE_DOWN_CR, "COM1 Coarse down");
-	gRpStdbyCOM1CoarseUpCmdRef         = XPLMCreateCommand(sRP_STDBY_COM1_COARSE_UP_CR, "COM1 Coarse up");
-	gRpActvCOM1FineDownCmdRef         = XPLMCreateCommand(sRP_ACTV_COM1_FINE_DOWN_CR, "COM1 Fine down");
-	gRpActvCOM1FineUpCmdRef           = XPLMCreateCommand(sRP_ACTV_COM1_FINE_UP_CR, "COM1 Fine up");
-	gRpActvCOM1CoarseDownCmdRef       = XPLMCreateCommand(sRP_ACTV_COM1_COARSE_DOWN_CR, "COM1 Coarse down");
-	gRpActvCOM1CoarseUpCmdRef         = XPLMCreateCommand(sRP_ACTV_COM1_COARSE_UP_CR, "COM1 Coarse up");
+	gRpStdbyCOM1FineDownCmdRef         = XPLMFindCommand(sRP_STDBY_COM1_FINE_DOWN_CR);
+	gRpStdbyCOM1FineUpCmdRef           = XPLMFindCommand(sRP_STDBY_COM1_FINE_UP_CR);
+	gRpStdbyCOM1CoarseDownCmdRef       = XPLMFindCommand(sRP_STDBY_COM1_COARSE_DOWN_CR);
+	gRpStdbyCOM1CoarseUpCmdRef         = XPLMFindCommand(sRP_STDBY_COM1_COARSE_UP_CR);
+	gRpActvCOM1FineDownCmdRef         = XPLMFindCommand(sRP_ACTV_COM1_FINE_DOWN_CR);
+	gRpActvCOM1FineUpCmdRef           = XPLMFindCommand(sRP_ACTV_COM1_FINE_UP_CR);
+	gRpActvCOM1CoarseDownCmdRef       = XPLMFindCommand(sRP_ACTV_COM1_COARSE_DOWN_CR);
+	gRpActvCOM1CoarseUpCmdRef         = XPLMFindCommand(sRP_ACTV_COM1_COARSE_UP_CR);
+	gRpCOM1StbyFlipCmdRef              = XPLMFindCommand(sRP_COM1_STBY_FLIP_CR);
 
     XPLMRegisterCommandHandler(gRpStdbyCOM1FineDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_DOWN);
     XPLMRegisterCommandHandler(gRpStdbyCOM1FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_UP);
@@ -174,6 +192,7 @@ void rp_init() {
     XPLMRegisterCommandHandler(gRpActvCOM1FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_FINE_UP);
     XPLMRegisterCommandHandler(gRpActvCOM1CoarseDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_COARSE_DOWN);
     XPLMRegisterCommandHandler(gRpActvCOM1CoarseUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_COARSE_UP);
+    XPLMRegisterCommandHandler(gRpCOM1StbyFlipCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_COM1_STANDBY_FLIP);
 
 	gRpCOM1FreqHzDataRef        = XPLMFindDataRef(sRP_COM1_FREQ_HZ_DR);
     gRpCOM1StdbyFreqHzDataRef   = XPLMFindDataRef(sRP_COM1_STDBY_FREQ_HZ_DR);
@@ -203,9 +222,9 @@ void *run(void *ptr_thread_data) {
 		long loop_start_time = sys_time_clock_get_time_usec();
 
 		///////////////////////////////////////////////////////////////////////////
-		/// CRITICAL FAST 1000 Hz functions
+		/// Read panel for new messages. CRITICAL FAST 1000 Hz functions
 		///////////////////////////////////////////////////////////////////////////
-		if (us_run_every(1000, COUNTER3, loop_start_time)) {
+		if (us_run_every(1000, COUNTER1, loop_start_time)) {
 			// read/write board
 			counter++;
 			tmp1 = dec2bcd(counter % 100000, 5);
@@ -225,20 +244,23 @@ void *run(void *ptr_thread_data) {
 				msg += buf[0];
 				rp_process(msg);
 			}
+		}
+		///////////////////////////////////////////////////////////////////////////
+
+		///////////////////////////////////////////////////////////////////////////
+		/// Update Panel. NON-CRITICAL 100 Hz functions:
+		///////////////////////////////////////////////////////////////////////////
+		if (us_run_every(10000, COUNTER2, loop_start_time)) {
+			// Update local DataRefs.
+			rp_update_datarefs();
+			// update Panel.
+			inReportBytesCount = panel_read_non_blocking(buf);
 			panel_write(writeBuf);
 		}
 		///////////////////////////////////////////////////////////////////////////
 
-		///////////////////////////////////////////////////////////////////////////
-		/// NON-CRITICAL SLOW 10 Hz functions
-		///////////////////////////////////////////////////////////////////////////
-		else if (us_run_every(100000, COUNTER6, loop_start_time)) {
-			//update_screen();
-		}
-		///////////////////////////////////////////////////////////////////////////
-
 		if (loop_start_time - last_mainloop_idle >= 100000) {
-			writeLog("CRITICAL WARNING! CPU LOAD TOO HIGH.\n");
+			XPLMDebugString("-> CP: rp_controller.run: CRITICAL WARNING! CPU LOAD TOO HIGH.\n");
 			last_mainloop_idle = loop_start_time;//reset to prevent multiple messages
 		} else {
 			//writeConsole(0, 0, "CPU LOAD OK.");
