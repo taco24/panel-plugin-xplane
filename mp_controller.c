@@ -258,6 +258,10 @@ void *mpRun(void *ptr_thread_data) {
 			counter++;
 			inReportBytesCount = mp_panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
+				if (inReportBytesCount > 3) {
+					sprintf(tmp, "-> CP: mp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
+					XPLMDebugString(tmp);
+				}
 //			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
 //				XPLMDebugString(tmp);
 				counter2++;
@@ -279,8 +283,10 @@ void *mpRun(void *ptr_thread_data) {
 			// update Panel.
 			inReportBytesCount = mp_panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
-//			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
-//				XPLMDebugString(tmp);
+				if (inReportBytesCount > 3) {
+					sprintf(tmp, "-> CP: mp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
+					XPLMDebugString(tmp);
+				}
 				uint32_t msg = 0;
 				msg += buf[2] << 16;
 				msg += buf[1] << 8;

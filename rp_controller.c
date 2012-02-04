@@ -52,6 +52,7 @@ XPLMCommandRef gRpActvCOM1FineUpCmdRef = NULL;
 XPLMCommandRef gRpActvCOM1CoarseDownCmdRef = NULL;
 XPLMCommandRef gRpActvCOM1CoarseUpCmdRef = NULL;
 XPLMCommandRef gRpCOM1StbyFlipCmdRef = NULL;
+XPLMCommandRef gRpCOM2StbyFlipCmdRef = NULL;
 
 /* RADIO PANEL Data Refs */
 XPLMDataRef gRpCOM1FreqHzDataRef = NULL;
@@ -122,6 +123,152 @@ inline void rp_upper_led_update(uint32_t x, uint32_t y, uint32_t z, uint32_t r, 
     m[22] = 0x00;
 }
 
+void rp_process_coarse_right(uint32_t knobSelection) {
+	switch (knobSelection) {
+	case 0x000001:
+	case 0x000080:
+		XPLMCommandOnce(gRpStdbyCOM1CoarseUpCmdRef);
+		break;
+	case 0x000002:
+	case 0x000100:
+		break;
+	case 0x000004:
+	case 0x000200:
+		break;
+	case 0x000008:
+	case 0x000400:
+		break;
+	case 0x000010:
+	case 0x000800:
+		break;
+	case 0x000020:
+	case 0x001000:
+		break;
+	case 0x000040:
+	case 0x002000:
+		break;
+	default:
+		break;
+	}
+}
+
+void rp_process_coarse_left(uint32_t knobSelection) {
+	switch (knobSelection) {
+	case 0x000001:
+	case 0x000080:
+		XPLMCommandOnce(gRpStdbyCOM1CoarseDownCmdRef);
+		break;
+	case 0x000002:
+	case 0x000100:
+		break;
+	case 0x000004:
+	case 0x000200:
+		break;
+	case 0x000008:
+	case 0x000400:
+		break;
+	case 0x000010:
+	case 0x000800:
+		break;
+	case 0x000020:
+	case 0x001000:
+		break;
+	case 0x000040:
+	case 0x002000:
+		break;
+	default:
+		break;
+	}
+}
+
+void rp_process_fine_right(uint32_t knobSelection) {
+	switch (knobSelection) {
+	case 0x000001:
+	case 0x000080:
+		XPLMCommandOnce(gRpStdbyCOM1FineUpCmdRef);
+		break;
+	case 0x000002:
+	case 0x000100:
+		break;
+	case 0x000004:
+	case 0x000200:
+		break;
+	case 0x000008:
+	case 0x000400:
+		break;
+	case 0x000010:
+	case 0x000800:
+		break;
+	case 0x000020:
+	case 0x001000:
+		break;
+	case 0x000040:
+	case 0x002000:
+		break;
+	default:
+		break;
+	}
+}
+
+void rp_process_fine_left(uint32_t knobSelection) {
+	switch (knobSelection) {
+	case 0x000001:
+	case 0x000080:
+		XPLMCommandOnce(gRpStdbyCOM1FineDownCmdRef);
+		break;
+	case 0x000002:
+	case 0x000100:
+		break;
+	case 0x000004:
+	case 0x000200:
+		break;
+	case 0x000008:
+	case 0x000400:
+		break;
+	case 0x000010:
+	case 0x000800:
+		break;
+	case 0x000020:
+	case 0x001000:
+		break;
+	case 0x000040:
+	case 0x002000:
+		break;
+	default:
+		break;
+	}
+}
+
+void rp_process_switch(uint32_t knobSelection) {
+	switch (knobSelection) {
+	case 0x000001:
+	case 0x000080:
+		XPLMCommandOnce(gRpCOM1StbyFlipCmdRef);
+		break;
+	case 0x000002:
+	case 0x000100:
+		XPLMCommandOnce(gRpCOM2StbyFlipCmdRef);
+		break;
+	case 0x000004:
+	case 0x000200:
+		break;
+	case 0x000008:
+	case 0x000400:
+		break;
+	case 0x000010:
+	case 0x000800:
+		break;
+	case 0x000020:
+	case 0x001000:
+		break;
+	case 0x000040:
+	case 0x002000:
+		break;
+	default:
+		break;
+	}
+}
+
 int rp_process(uint32_t msg) {
     sprintf(tmp, "-> CP: rp_controller.rp_process: msg: %d\n", msg);
 	XPLMDebugString(tmp);
@@ -133,27 +280,41 @@ int rp_process(uint32_t msg) {
     uint32_t lowerFineTuning = msg & RP_READ_LOWER_FINE_TUNING_MASK;
     uint32_t lowerCoarseTuning = msg & RP_READ_LOWER_COARSE_TUNING_MASK;
     uint32_t upperStby = msg & RP_READ_UPPER_ACT_STBY;
+    uint32_t lowerStby = msg & RP_READ_LOWER_ACT_STBY;
 
     if (upperCoarseTuning || upperFineTuning) {
 		if (upperCoarseTuning == RP_READ_UPPER_COARSE_RIGHT) {
 			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_COARSE_RIGHT.\n");
-			XPLMCommandOnce(gRpStdbyCOM1CoarseUpCmdRef);
+			rp_process_coarse_right(upperKnob);
 		} else if (upperCoarseTuning == RP_READ_UPPER_COARSE_LEFT) {
 			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_COARSE_LEFT.\n");
-			XPLMCommandOnce(gRpStdbyCOM1CoarseDownCmdRef);
+			rp_process_coarse_left(upperKnob);
 		} else if (upperFineTuning == RP_READ_UPPER_FINE_RIGHT) {
 			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_FINE_RIGHT.\n");
-			XPLMCommandOnce(gRpStdbyCOM1FineUpCmdRef);
+			rp_process_fine_right(upperKnob);
 		} else if (upperFineTuning == RP_READ_UPPER_FINE_LEFT) {
 			XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_FINE_LEFT.\n");
-			XPLMCommandOnce(gRpStdbyCOM1FineDownCmdRef);
+			rp_process_fine_left(upperKnob);
 		}
     }
     if (upperStby) {
-		XPLMDebugString("-> CP: rp_controller.rp_process RP_READ_UPPER_FINE_RIGHT.\n");
-		XPLMCommandOnce(gRpCOM1StbyFlipCmdRef);
+    	rp_process_switch(upperKnob);
     }
-	return res;
+    if (lowerCoarseTuning || lowerFineTuning) {
+		if (lowerCoarseTuning == RP_READ_LOWER_COARSE_RIGHT) {
+			rp_process_coarse_right(lowerKnob);
+		} else if (lowerCoarseTuning == RP_READ_LOWER_COARSE_LEFT) {
+			rp_process_coarse_left(lowerKnob);
+		} else if (lowerFineTuning == RP_READ_LOWER_FINE_RIGHT) {
+			rp_process_fine_right(lowerKnob);
+		} else if (lowerFineTuning == RP_READ_LOWER_FINE_LEFT) {
+			rp_process_fine_left(lowerKnob);
+		}
+    }
+    if (lowerStby) {
+    	rp_process_switch(lowerKnob);
+    }
+    return res;
 }
 
 void rp_update_datarefs() {
@@ -171,6 +332,7 @@ void rp_init() {
 	gRpActvCOM1CoarseDownCmdRef       = XPLMFindCommand(sRP_ACTV_COM1_COARSE_DOWN_CR);
 	gRpActvCOM1CoarseUpCmdRef         = XPLMFindCommand(sRP_ACTV_COM1_COARSE_UP_CR);
 	gRpCOM1StbyFlipCmdRef              = XPLMFindCommand(sRP_COM1_STBY_FLIP_CR);
+	gRpCOM2StbyFlipCmdRef              = XPLMFindCommand(sRP_COM2_STBY_FLIP_CR);
 
     XPLMRegisterCommandHandler(gRpStdbyCOM1FineDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_DOWN);
     XPLMRegisterCommandHandler(gRpStdbyCOM1FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_UP);
@@ -181,6 +343,7 @@ void rp_init() {
     XPLMRegisterCommandHandler(gRpActvCOM1CoarseDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_COARSE_DOWN);
     XPLMRegisterCommandHandler(gRpActvCOM1CoarseUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_ACTV_COM1_COARSE_UP);
     XPLMRegisterCommandHandler(gRpCOM1StbyFlipCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_COM1_STANDBY_FLIP);
+    XPLMRegisterCommandHandler(gRpCOM2StbyFlipCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_COM2_STANDBY_FLIP);
 
 	gRpCOM1FreqHzDataRef        = XPLMFindDataRef(sRP_COM1_FREQ_HZ_DR);
     gRpCOM1StdbyFreqHzDataRef   = XPLMFindDataRef(sRP_COM1_STDBY_FREQ_HZ_DR);
@@ -223,8 +386,10 @@ void *rpRun(void *ptr_thread_data) {
 			rp_upper_led_update(tmp1, tmp2, tmp3, tmp4, writeBuf);
 			inReportBytesCount = panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
-			    sprintf(tmp, "-> CP: rp_controller.run: msg: %#0x,%#0x,%#0x\n", buf[2], buf[1], buf[0]);
-				XPLMDebugString(tmp);
+				if (inReportBytesCount > 3) {
+					sprintf(tmp, "-> CP: pp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
+					XPLMDebugString(tmp);
+				}
 				counter2++;
 				uint32_t msg = 0;
 				msg += buf[2] << 16;
@@ -244,8 +409,10 @@ void *rpRun(void *ptr_thread_data) {
 			// update Panel.
 			inReportBytesCount = panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
-//			    sprintf(tmp, "-> CP: rp_controller.run: msg: %#0x,%#0x,%#0x\n", buf[2], buf[1], buf[0]);
-//				XPLMDebugString(tmp);
+				if (inReportBytesCount > 3) {
+					sprintf(tmp, "-> CP: pp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
+					XPLMDebugString(tmp);
+				}
 				uint32_t msg = 0;
 				msg += buf[2] << 16;
 				msg += buf[1] << 8;
