@@ -275,9 +275,9 @@ void *mpRun(void *ptr_thread_data) {
 		///////////////////////////////////////////////////////////////////////////
 
 		///////////////////////////////////////////////////////////////////////////
-		/// Update Panel. NON-CRITICAL 20 Hz functions:
+		/// Update Panel. CRITICAL 20 Hz functions:
 		///////////////////////////////////////////////////////////////////////////
-		else if (us_run_every(50000, COUNTER6, loop_start_time)) {
+		if (us_run_every(50000, COUNTER6, loop_start_time)) {
 			// Update local DataRefs.
 			mp_update_datarefs();
 			// update Panel.
