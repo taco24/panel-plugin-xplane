@@ -68,4 +68,29 @@ extern void *rpRun(void *ptr_thread_data);
 #define sRP_NAV2_FREQ_HZ_DR               "sim/cockpit/radios/nav2_freq_hz"
 #define sRP_NAV2_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/nav2_stdby_freq_hz"
 
+
+#define sRP_ACTV_ADF1_HUNDREDS_UP_CR      "sim/radios/actv_adf1_hundreds_up"
+#define sRP_ACTV_ADF1_HUNDREDS_DOWN_CR    "sim/radios/actv_adf1_hundreds_down"
+#define sRP_ACTV_ADF1_TENS_UP_CR          "sim/radios/actv_adf1_tens_up"
+#define sRP_ACTV_ADF1_TENS_DOWN_CR        "sim/radios/actv_adf1_tens_down"
+#define sRP_ACTV_ADF1_ONES_UP_CR          "sim/radios/actv_adf1_ones_up"
+#define sRP_ACTV_ADF1_ONES_DOWN_CR        "sim/radios/actv_adf1_ones_down"
+
+#define sRP_XPDR_THOUSANDS_UP_CR          "sim/transponder/transponder_thousands_up"
+#define sRP_XPDR_THOUSANDS_DOWN_CR        "sim/transponder/transponder_thousands_down"
+#define sRP_XPDR_HUNDREDS_UP_CR           "sim/transponder/transponder_hundreds_up"
+#define sRP_XPDR_HUNDREDS_DOWN_CR         "sim/transponder/transponder_hundreds_down"
+#define sRP_XPDR_TENS_UP_CR               "sim/transponder/transponder_tens_up"
+#define sRP_XPDR_TENS_DOWN_CR             "sim/transponder/transponder_tens_down"
+#define sRP_XPDR_ONES_UP_CR               "sim/transponder/transponder_ones_up"
+#define sRP_XPDR_ONES_DOWN_CR             "sim/transponder/transponder_ones_down"
+
+#define sRP_XPDR_CODE_DR                  "sim/cockpit/radios/transponder_code"
+#define sRP_ADF1_FREQ_HZ_DR               "sim/cockpit/radios/adf1_freq_hz"
+#define sRP_NAV1_DME_DISTANCE_NM_DR       "sim/cockpit2/radios/indicators/nav1_dme_distance_nm"
+#define sRP_NAV1_DME_SPEED_KTS_DR         "sim/cockpit2/radios/indicators/nav1_dme_speed_kts"
+#define sRP_NAV2_DME_DISTANCE_NM_DR       "sim/cockpit2/radios/indicators/nav2_dme_distance_nm"
+#define sRP_NAV2_DME_SPEED_KTS_DR         "sim/cockpit2/radios/indicators/nav2_dme_speed_kts"
+#define sRP_DME_SLAVE_SOURCE_DR           "sim/cockpit2/radios/actuators/DME_slave_source"
+
 #endif /* RP_CONTROLLER_H_ */

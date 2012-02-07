@@ -60,7 +60,23 @@ enum RP_COMMANDS_MAP {
 	RP_CMD_ACTV_NAV2_FINE_UP,
 	RP_CMD_ACTV_NAV2_COARSE_DOWN,
 	RP_CMD_ACTV_NAV2_COARSE_UP,
-	RP_CMD_NAV2_STANDBY_FLIP
+	RP_CMD_NAV2_STANDBY_FLIP,
+
+	RP_CMD_ACTV_ADF1_HUNDREDS_DOWN,
+	RP_CMD_ACTV_ADF1_HUNDREDS_UP,
+	RP_CMD_ACTV_ADF1_TENS_DOWN,
+	RP_CMD_ACTV_ADF1_TENS_UP,
+	RP_CMD_ACTV_ADF1_ONES_DOWN,
+	RP_CMD_ACTV_ADF1_ONES_UP,
+	RP_CMD_XPDR_THOUSANDS_DOWN,
+	RP_CMD_XPDR_THOUSANDS_UP,
+	RP_CMD_XPDR_HUNDREDS_DOWN,
+	RP_CMD_XPDR_HUNDREDS_UP,
+	RP_CMD_XPDR_TENS_DOWN,
+	RP_CMD_XPDR_TENS_UP,
+	RP_CMD_XPDR_ONES_DOWN,
+	RP_CMD_XPDR_ONES_UP
+
 };
 
 static const int min_mainloop_time = 5000;
@@ -114,6 +130,21 @@ XPLMCommandRef gRpActvNAV2CoarseDownCmdRef = NULL;
 XPLMCommandRef gRpActvNAV2CoarseUpCmdRef = NULL;
 XPLMCommandRef gRpNAV2StbyFlipCmdRef = NULL;
 
+XPLMCommandRef gRpActvADF1HundredsUpCmdRef = NULL;
+XPLMCommandRef gRpActvADF1HundredsDownCmdRef = NULL;
+XPLMCommandRef gRpActvADF1TensUpCmdRef = NULL;
+XPLMCommandRef gRpActvADF1TensDownCmdRef = NULL;
+XPLMCommandRef gRpActvADF1OnesUpCmdRef = NULL;
+XPLMCommandRef gRpActvADF1OnesDownCmdRef = NULL;
+
+XPLMCommandRef gRpXpdrThousandsUpCmdRef = NULL;
+XPLMCommandRef gRpXpdrThousandsDownCmdRef = NULL;
+XPLMCommandRef gRpXpdrHundredsUpCmdRef = NULL;
+XPLMCommandRef gRpXpdrHundredsDownCmdRef = NULL;
+XPLMCommandRef gRpXpdrTensUpCmdRef = NULL;
+XPLMCommandRef gRpXpdrTensDownCmdRef = NULL;
+XPLMCommandRef gRpXpdrOnesUpCmdRef = NULL;
+XPLMCommandRef gRpXpdrOnesDownCmdRef = NULL;
 
 /* RADIO PANEL Data Refs */
 XPLMDataRef gRpCOM1FreqHzDataRef = NULL;
@@ -128,6 +159,14 @@ XPLMDataRef gRpNAV1StdbyFreqHzDataRef = NULL;
 XPLMDataRef gRpNAV2FreqHzDataRef = NULL;
 XPLMDataRef gRpNAV2StdbyFreqHzDataRef = NULL;
 
+XPLMDataRef gRpXpdrCodeDataRef = NULL;
+XPLMDataRef gRpADF1FreqHzDataRef = NULL;
+XPLMDataRef gRpNAV1DmeDistanceNmDataRef = NULL;
+XPLMDataRef gRpNAV1DmeSpeedKtsDataRef = NULL;
+XPLMDataRef gRpNAV2DmeDistanceNmDataRef = NULL;
+XPLMDataRef gRpNAV2DmeSpeedKtsDataRef = NULL;
+XPLMDataRef gRpDmeSlaveSourceDataRef = NULL;
+
 /* RADIO PANEL Global variables */
 uint32_t gRpCOM1StbyFreq = 0;
 uint32_t gRpCOM1Freq = 0;
@@ -140,6 +179,15 @@ uint32_t gRpNAV1Freq = 0;
 
 uint32_t gRpNAV2StbyFreq = 0;
 uint32_t gRpNAV2Freq = 0;
+
+uint32_t gRpXpdrCode = 0;
+uint32_t gRpADF1FreqHz = 0;
+uint32_t gRpNAV1DmeDistanceNm = 0;
+uint32_t gRpNAV1DmeSpeedKts = 0;
+uint32_t gRpNAV2DmeDistanceNm = 0;
+uint32_t gRpNAV2DmeSpeedKts = 0;
+uint32_t gRpDmeSlaveSource = 0;
+
 
 int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
@@ -223,6 +271,24 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
 			gRpNAV2StbyFreq = (XPLMGetDatai(gRpNAV2FreqHzDataRef));
 			gRpNAV2Freq = (XPLMGetDatai(gRpNAV2FreqHzDataRef));
 			break;
+		case RP_CMD_ACTV_ADF1_HUNDREDS_DOWN:
+		case RP_CMD_ACTV_ADF1_HUNDREDS_UP:
+		case RP_CMD_ACTV_ADF1_TENS_DOWN:
+		case RP_CMD_ACTV_ADF1_TENS_UP:
+		case RP_CMD_ACTV_ADF1_ONES_DOWN:
+		case RP_CMD_ACTV_ADF1_ONES_UP:
+			gRpADF1FreqHz = (XPLMGetDatai(gRpADF1FreqHzDataRef));
+			break;
+		case RP_CMD_XPDR_THOUSANDS_DOWN:
+		case RP_CMD_XPDR_THOUSANDS_UP:
+		case RP_CMD_XPDR_HUNDREDS_DOWN:
+		case RP_CMD_XPDR_HUNDREDS_UP:
+		case RP_CMD_XPDR_TENS_DOWN:
+		case RP_CMD_XPDR_TENS_UP:
+		case RP_CMD_XPDR_ONES_DOWN:
+		case RP_CMD_XPDR_ONES_UP:
+			gRpXpdrCode = (XPLMGetDatai(gRpXpdrCodeDataRef));
+			break;
 		default:
 			break;
  }
@@ -231,25 +297,26 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
 }
 
 
-inline void rp_upper_led_update(uint32_t x, uint32_t y, uint32_t upperDecimal, uint32_t z, uint32_t r, uint32_t lowerDecimal, uint8_t m[]) {
+inline void rp_upper_led_update(uint32_t x, uint32_t y, uint32_t upperDecimal, uint32_t upperPos1, uint32_t upperPos2,
+		uint32_t z, uint32_t r, uint32_t lowerDecimal, uint32_t lowerPos1, uint32_t lowerPos2, uint8_t m[]) {
     m[0] = 0x00;
-    m[1] = ((x >> 16) & 0x0F);
-    m[2] = ((x >> 12) & 0x0F);
+    m[1] = ((x >> 16) & 0x0F) | upperPos1;
+    m[2] = ((x >> 12) & 0x0F) | upperPos2;
     m[3] = ((x >>  8) & 0x0F) | upperDecimal;
     m[4] = ((x >>  4) & 0x0F);
     m[5] = ((x >>  0) & 0x0F);
-    m[6] = ((y >> 16) & 0x0F);
-    m[7] = ((y >> 12) & 0x0F);
+    m[6] = ((y >> 16) & 0x0F) | upperPos1;
+    m[7] = ((y >> 12) & 0x0F) | upperPos2;
     m[8] = ((y >>  8) & 0x0F) | upperDecimal;
     m[9] = ((y >>  4) & 0x0F);
     m[10] = ((y >>  0) & 0x0F);
-    m[11] = ((z >> 16) & 0x0F);
-    m[12] = ((z >> 12) & 0x0F);
+    m[11] = ((z >> 16) & 0x0F) | lowerPos1;
+    m[12] = ((z >> 12) & 0x0F) | lowerPos2;
     m[13] = ((z >>  8) & 0x0F) | lowerDecimal;
     m[14] = ((z >>  4) & 0x0F);
     m[15] = ((z >>  0) & 0x0F);
-    m[16] = ((r >> 16) & 0x0F);
-    m[17] = ((r >> 12) & 0x0F);
+    m[16] = ((r >> 16) & 0x0F) | lowerPos1;
+    m[17] = ((r >> 12) & 0x0F) | lowerPos2;
     m[18] = ((r >>  8) & 0x0F) | lowerDecimal;
     m[19] = ((r >>  4) & 0x0F);
     m[20] = ((r >>  0) & 0x0F);
@@ -277,7 +344,7 @@ void rp_process_coarse_right(uint32_t knobSelection) {
 		break;
 	case 0x000010:
 	case 0x000800:
-		//XPLMCommandOnce(gRpStdbyADFCoarseUpCmdRef);
+		XPLMCommandOnce(gRpActvADF1HundredsUpCmdRef);
 		break;
 	case 0x000020:
 	case 0x001000:
@@ -285,7 +352,10 @@ void rp_process_coarse_right(uint32_t knobSelection) {
 		break;
 	case 0x000040:
 	case 0x002000:
-		//XPLMCommandOnce(gRpStdbyXPDRCoarseUpCmdRef);
+		if (((gRpXpdrCode / 100) % 10) == 7) {
+			XPLMCommandOnce(gRpXpdrThousandsUpCmdRef);
+		}
+		XPLMCommandOnce(gRpXpdrHundredsUpCmdRef);
 		break;
 	default:
 		break;
@@ -312,12 +382,17 @@ void rp_process_coarse_left(uint32_t knobSelection) {
 		break;
 	case 0x000010:
 	case 0x000800:
+		XPLMCommandOnce(gRpActvADF1HundredsDownCmdRef);
 		break;
 	case 0x000020:
 	case 0x001000:
 		break;
 	case 0x000040:
 	case 0x002000:
+		if (((gRpXpdrCode / 100) % 10) == 0) {
+			XPLMCommandOnce(gRpXpdrThousandsDownCmdRef);
+		}
+		XPLMCommandOnce(gRpXpdrHundredsDownCmdRef);
 		break;
 	default:
 		break;
@@ -344,12 +419,20 @@ void rp_process_fine_right(uint32_t knobSelection) {
 		break;
 	case 0x000010:
 	case 0x000800:
+		if ((gRpADF1FreqHz % 10) == 9) {
+			XPLMCommandOnce(gRpActvADF1TensUpCmdRef);
+		}
+		XPLMCommandOnce(gRpActvADF1OnesUpCmdRef);
 		break;
 	case 0x000020:
 	case 0x001000:
 		break;
 	case 0x000040:
 	case 0x002000:
+		if ((gRpXpdrCode % 10) == 7) {
+			XPLMCommandOnce(gRpXpdrTensUpCmdRef);
+		}
+		XPLMCommandOnce(gRpXpdrOnesUpCmdRef);
 		break;
 	default:
 		break;
@@ -376,12 +459,20 @@ void rp_process_fine_left(uint32_t knobSelection) {
 		break;
 	case 0x000010:
 	case 0x000800:
+		if ((gRpADF1FreqHz % 10) == 0) {
+			XPLMCommandOnce(gRpActvADF1TensDownCmdRef);
+		}
+		XPLMCommandOnce(gRpActvADF1OnesDownCmdRef);
 		break;
 	case 0x000020:
 	case 0x001000:
 		break;
 	case 0x000040:
 	case 0x002000:
+		if ((gRpXpdrCode % 10) == 0) {
+			XPLMCommandOnce(gRpXpdrTensDownCmdRef);
+		}
+		XPLMCommandOnce(gRpXpdrOnesDownCmdRef);
 		break;
 	default:
 		break;
@@ -476,6 +567,15 @@ void rp_update_datarefs() {
 
     gRpNAV2StbyFreq = (XPLMGetDatai(gRpNAV2StdbyFreqHzDataRef));
     gRpNAV2Freq = (XPLMGetDatai(gRpNAV2FreqHzDataRef));
+
+    gRpXpdrCode = (XPLMGetDatai(gRpXpdrCodeDataRef));
+    gRpADF1FreqHz = (XPLMGetDatai(gRpADF1FreqHzDataRef));
+    gRpNAV1DmeDistanceNm = (XPLMGetDatai(gRpNAV1DmeDistanceNmDataRef));
+    gRpNAV1DmeSpeedKts = (XPLMGetDatai(gRpNAV1DmeSpeedKtsDataRef));
+    gRpNAV2DmeDistanceNm = (XPLMGetDatai(gRpNAV2DmeDistanceNmDataRef));
+    gRpNAV2DmeSpeedKts = (XPLMGetDatai(gRpNAV2DmeSpeedKtsDataRef));
+    gRpDmeSlaveSource = (XPLMGetDatai(gRpDmeSlaveSourceDataRef));
+
 }
 
 void rp_init() {
@@ -584,6 +684,37 @@ void rp_init() {
     gRpNAV2StbyFreq = (XPLMGetDatai(gRpNAV2StdbyFreqHzDataRef));
     gRpNAV2Freq = (XPLMGetDatai(gRpNAV2FreqHzDataRef));
 
+    gRpActvADF1HundredsUpCmdRef = XPLMFindCommand(sRP_ACTV_ADF1_HUNDREDS_UP_CR);
+    gRpActvADF1HundredsDownCmdRef = XPLMFindCommand(sRP_ACTV_ADF1_HUNDREDS_DOWN_CR);
+    gRpActvADF1TensUpCmdRef = XPLMFindCommand(sRP_ACTV_ADF1_TENS_UP_CR);
+    gRpActvADF1TensDownCmdRef = XPLMFindCommand(sRP_ACTV_ADF1_TENS_DOWN_CR);
+    gRpActvADF1OnesUpCmdRef = XPLMFindCommand(sRP_ACTV_ADF1_ONES_UP_CR);
+    gRpActvADF1OnesDownCmdRef = XPLMFindCommand(sRP_ACTV_ADF1_ONES_DOWN_CR);
+
+    gRpXpdrThousandsUpCmdRef = XPLMFindCommand(sRP_XPDR_THOUSANDS_UP_CR);
+    gRpXpdrThousandsDownCmdRef = XPLMFindCommand(sRP_XPDR_THOUSANDS_DOWN_CR);
+    gRpXpdrHundredsUpCmdRef = XPLMFindCommand(sRP_XPDR_HUNDREDS_UP_CR);
+    gRpXpdrHundredsDownCmdRef = XPLMFindCommand(sRP_XPDR_HUNDREDS_DOWN_CR);
+    gRpXpdrTensUpCmdRef = XPLMFindCommand(sRP_XPDR_TENS_UP_CR);
+    gRpXpdrTensDownCmdRef = XPLMFindCommand(sRP_XPDR_TENS_DOWN_CR);
+    gRpXpdrOnesUpCmdRef = XPLMFindCommand(sRP_XPDR_ONES_UP_CR);
+    gRpXpdrOnesDownCmdRef = XPLMFindCommand(sRP_XPDR_ONES_DOWN_CR);
+
+    gRpXpdrCodeDataRef = XPLMFindDataRef(sRP_XPDR_CODE_DR);
+    gRpADF1FreqHzDataRef = XPLMFindDataRef(sRP_ADF1_FREQ_HZ_DR);
+    gRpNAV1DmeDistanceNmDataRef = XPLMFindDataRef(sRP_NAV1_DME_DISTANCE_NM_DR);
+    gRpNAV1DmeSpeedKtsDataRef = XPLMFindDataRef(sRP_NAV1_DME_SPEED_KTS_DR);
+    gRpNAV2DmeDistanceNmDataRef = XPLMFindDataRef(sRP_NAV2_DME_DISTANCE_NM_DR);
+    gRpNAV2DmeSpeedKtsDataRef = XPLMFindDataRef(sRP_NAV2_DME_SPEED_KTS_DR);
+    gRpDmeSlaveSourceDataRef = XPLMFindDataRef(sRP_DME_SLAVE_SOURCE_DR);
+
+    gRpXpdrCode = (XPLMGetDatai(gRpXpdrCodeDataRef));
+    gRpADF1FreqHz = (XPLMGetDatai(gRpADF1FreqHzDataRef));
+    gRpNAV1DmeDistanceNm = (XPLMGetDatai(gRpNAV1DmeDistanceNmDataRef));
+    gRpNAV1DmeSpeedKts = (XPLMGetDatai(gRpNAV1DmeSpeedKtsDataRef));
+    gRpNAV2DmeDistanceNm = (XPLMGetDatai(gRpNAV2DmeDistanceNmDataRef));
+    gRpNAV2DmeSpeedKts = (XPLMGetDatai(gRpNAV2DmeSpeedKtsDataRef));
+    gRpDmeSlaveSource = (XPLMGetDatai(gRpDmeSlaveSourceDataRef));
 }
 
 void rp_prepare_write_buffer(int i, int j) {
@@ -592,7 +723,11 @@ void rp_prepare_write_buffer(int i, int j) {
 	uint32_t tmp3 = 0;
 	uint32_t tmp4 = 0;
 	uint32_t upperDecimal = 0;
+	uint32_t upperPos1 = 0;
+	uint32_t upperPos2 = 0;
 	uint32_t lowerDecimal = 0;
+	uint32_t lowerPos1 = 0;
+	uint32_t lowerPos2 = 0;
 	switch (gUpperKnob) {
 	case 0x000001:
 	case 0x000080:
@@ -620,12 +755,21 @@ void rp_prepare_write_buffer(int i, int j) {
 		break;
 	case 0x000010:
 	case 0x000800:
+		tmp1 = dec2bcd(gRpADF1FreqHz, 5);
+		tmp2 = dec2bcd(gRpADF1FreqHz, 5);
+		upperPos1 = 0xFF;
+		upperPos2 = 0xFF;
 		break;
 	case 0x000020:
 	case 0x001000:
+		tmp1 = dec2bcd(gRpNAV1DmeDistanceNm, 5);
+		tmp2 = dec2bcd(gRpNAV1DmeSpeedKts, 5);
 		break;
 	case 0x000040:
 	case 0x002000:
+		tmp1 = dec2bcd(gRpXpdrCode, 5);
+		tmp2 = dec2bcd(gRpXpdrCode, 5);
+		upperPos1 = 0xFF;
 		break;
 	default:
 		break;
@@ -657,23 +801,28 @@ void rp_prepare_write_buffer(int i, int j) {
 		break;
 	case 0x000010:
 	case 0x000800:
-		tmp3 = dec2bcd(i % 100000, 5);
-		tmp4 = dec2bcd(j % 1000000, 5);
+		tmp3 = dec2bcd(gRpADF1FreqHz, 5);
+		tmp4 = dec2bcd(gRpADF1FreqHz, 5);
+		lowerPos1 = 0xFF;
+		lowerPos2 = 0xFF;
 		break;
 	case 0x000020:
 	case 0x001000:
+		tmp3 = dec2bcd(gRpNAV2DmeDistanceNm, 5);
+		tmp4 = dec2bcd(gRpNAV2DmeSpeedKts, 5);
 		tmp3 = dec2bcd(i % 100000, 5);
 		tmp4 = dec2bcd(j % 1000000, 5);
 		break;
 	case 0x000040:
 	case 0x002000:
-		tmp3 = dec2bcd(i % 100000, 5);
-		tmp4 = dec2bcd(j % 1000000, 5);
+		tmp3 = dec2bcd(gRpXpdrCode, 5);
+		tmp4 = dec2bcd(gRpXpdrCode, 5);
+		lowerPos1 = 0xFF;
 		break;
 	default:
 		break;
 	}
-	rp_upper_led_update(tmp1, tmp2, upperDecimal, tmp3, tmp4, lowerDecimal, writeBuf);
+	rp_upper_led_update(tmp1, tmp2, upperDecimal, upperPos1, upperPos2, tmp3, tmp4, lowerDecimal, lowerPos1, lowerPos2, writeBuf);
 }
 
 
