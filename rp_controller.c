@@ -81,7 +81,7 @@ enum RP_COMMANDS_MAP {
 
 static const int min_mainloop_time = 5000;
 static long last_mainloop_idle = 0;
-struct rp_thread_data *gPtrThreadData;
+static struct rp_thread_data *gPtrThreadData;
 static unsigned char buf[RP_IN_BUF_SIZE];
 static unsigned char writeBuf[RP_OUT_BUF_SIZE];
 static char tmp[100];

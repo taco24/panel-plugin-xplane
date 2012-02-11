@@ -20,6 +20,7 @@
 #include "log.h"
 #include "rp_controller.h"
 #include "mp_controller.h"
+#include "sp_controller.h"
 
 enum {
     PLUGIN_PLANE_ID = 0
@@ -28,18 +29,20 @@ enum {
 // Flightloop Callback INterval
 static const float FL_CB_INTERVAL = -1.0;
 
-pthread_t gRpController;
 struct rp_thread_data gRpThreadData;
 pthread_t gRpThread;
 int gRpThreadID = 1;
 int gRpThreadReturnCode = 0;
 
-pthread_t gMpController;
 struct thread_data gMpThreadData;
 pthread_t gMpThread;
 int gMpThreadID = 2;
 int gMpThreadReturnCode = 0;
 
+struct thread_data gSpThreadData;
+pthread_t gSpThread;
+int gSpThreadID = 3;
+int gSpThreadReturnCode = 0;
 
 float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
                                    float   inElapsedTimeSinceLastFlightLoop,
@@ -54,7 +57,7 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 
 	strcpy(outName, "X-Plane Panel Controller");
 	strcpy(outSig, "panel.saitek");
-	strcpy(outDesc, "panel 12.01.22");
+	strcpy(outDesc, "panel 12.02");
 
     XPLMRegisterFlightLoopCallback(PanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
 
@@ -88,6 +91,19 @@ PLUGIN_API int XPluginEnable(void) {
 		XPLMDebugString("-> CP: XPluginEnable: MpThread started.\n");
 	}
 
+	// Switch Panel
+	gSpThreadData.thread_id = gSpThreadID;
+	gSpThreadData.stop = 0;
+	gSpThreadReturnCode = pthread_create(&gSpThread, NULL, spRun,
+			(void *) &gSpThreadData);
+	if (gSpThreadReturnCode) {
+		XPLMDebugString("-> CP: XPluginEnable: Could not start SpThread.\n");
+		return 0;
+	} else {
+		XPLMDebugString("-> CP: XPluginEnable: SpThread started.\n");
+	}
+
+
 	return 1;
 }
 
@@ -95,6 +111,7 @@ PLUGIN_API void XPluginDisable(void) {
 	XPLMDebugString("-> CP: XPluginDisable\n");
 	gRpThreadData.stop = 1;
 	gMpThreadData.stop = 1;
+	gSpThreadData.stop = 1;
 #if IBM
 	Sleep(500);
 #else

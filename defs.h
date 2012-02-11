@@ -20,10 +20,21 @@ struct thread_data {
 	int stop;       // stop thread
 };
 
+struct mp_thread_data {
+	int isRunning;  // is calculation finished
+	int thread_id; 	// id of the thread
+	int stop;       // stop thread
+};
+
 struct rp_thread_data {
 	int isRunning;  // is calculation finished
 	int thread_id; 	// id of the thread
 	int stop;       // stop thread
 };
 
+struct sp_thread_data {
+	int isRunning;  // is calculation finished
+	int thread_id; 	// id of the thread
+	int stop;       // stop thread
+};
 #endif /* DEFS_H_ */
