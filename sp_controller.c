@@ -66,6 +66,7 @@ static unsigned char buf[SP_IN_BUF_SIZE];
 static unsigned char writeBuf[SP_OUT_BUF_SIZE];
 static char tmp[100];
 static uint32_t gEngineKnob = 0;
+static uint32_t gEngineKnobState = 0;
 
 /* SWITCH PANEL Command Refs */
 XPLMCommandRef gSpMagnetosOff1CmdRef = NULL;
@@ -189,7 +190,7 @@ uint32_t gSpNumberOfEngines = 0;
 uint32_t gSpBatteryArrayOn = 0;
 uint32_t gSpGearRetract = 0;
 uint32_t gSpOnGround = 0;
-float gSpLandingGearStatus = 0;
+float gSpLandingGearStatus[10];
 uint32_t gSpGear1Fail = 0;
 uint32_t gSpGear2Fail = 0;
 uint32_t gSpGear3Fail = 0;
@@ -209,7 +210,7 @@ int SwitchPanelCommandHandler(XPLMCommandRef    inCommand,
 		case SP_CMD_LANDING_GEAR_DOWN:
 			gSpGearRetract = (XPLMGetDatai(gSpGearRetractDataRef));
 			gSpOnGround = (XPLMGetDatai(gSpOnGroundDataRef));
-			gSpLandingGearStatus = (XPLMGetDataf(gSpLandingGearStatusDataRef));
+			XPLMGetDatavf(gSpLandingGearStatusDataRef, gSpLandingGearStatus, 0, 10);
 			gSpGear1Fail = (XPLMGetDatai(gSpGear1FailDataRef));
 			gSpGear2Fail = (XPLMGetDatai(gSpGear2FailDataRef));
 			gSpGear3Fail = (XPLMGetDatai(gSpGear3FailDataRef));
@@ -223,7 +224,8 @@ int SwitchPanelCommandHandler(XPLMCommandRef    inCommand,
 
 
 inline void sp_led_update() {
-	if (gSpLandingGearStatus > 0.5) {
+	// Gear is down and locked
+	if (gSpLandingGearStatus[0] < 1.0 && gSpLandingGearStatus[0] > 0.0 ) {
 		writeBuf[1] = 0x38;
 	} else {
 		writeBuf[1] = 0x07;
@@ -233,19 +235,89 @@ inline void sp_led_update() {
 void sp_process_knob(uint32_t knobSelection) {
 	switch (knobSelection) {
 	case 0x002000:
-		XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+		if (gSpNumberOfEngines == 1) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+		} else if (gSpNumberOfEngines == 2) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff2CmdRef);
+		} else if (gSpNumberOfEngines == 3) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff2CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff3CmdRef);
+		} else if (gSpNumberOfEngines == 4) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff2CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff3CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff4CmdRef);
+		}
 		break;
 	case 0x004000:
-		XPLMCommandOnce(gSpMagnetosRight1CmdRef);
+		if (gSpNumberOfEngines == 1) {
+			XPLMCommandOnce(gSpMagnetosRight1CmdRef);
+		} else if (gSpNumberOfEngines == 2) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+			XPLMCommandOnce(gSpMagnetosRight2CmdRef);
+		} else if (gSpNumberOfEngines == 3) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+			XPLMCommandOnce(gSpMagnetosRight2CmdRef);
+			XPLMCommandOnce(gSpMagnetosRight3CmdRef);
+		} else if (gSpNumberOfEngines == 4) {
+			XPLMCommandOnce(gSpMagnetosOff1CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff2CmdRef);
+			XPLMCommandOnce(gSpMagnetosRight3CmdRef);
+			XPLMCommandOnce(gSpMagnetosRight4CmdRef);
+		}
 		break;
 	case 0x008000:
-		XPLMCommandOnce(gSpMagnetosLeft1CmdRef);
+		if (gSpNumberOfEngines == 1) {
+			XPLMCommandOnce(gSpMagnetosLeft1CmdRef);
+		} else if (gSpNumberOfEngines == 2) {
+			XPLMCommandOnce(gSpMagnetosLeft1CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff2CmdRef);
+		} else if (gSpNumberOfEngines == 3) {
+			XPLMCommandOnce(gSpMagnetosLeft1CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff2CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff3CmdRef);
+		} else if (gSpNumberOfEngines == 4) {
+			XPLMCommandOnce(gSpMagnetosLeft1CmdRef);
+			XPLMCommandOnce(gSpMagnetosLeft2CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff3CmdRef);
+			XPLMCommandOnce(gSpMagnetosOff4CmdRef);
+		}
 		break;
 	case 0x010000:
-		XPLMCommandOnce(gSpMagnetosBoth1CmdRef);
+		if (gSpNumberOfEngines == 1) {
+			XPLMCommandOnce(gSpMagnetosBoth1CmdRef);
+		} else if (gSpNumberOfEngines == 2) {
+			XPLMCommandOnce(gSpMagnetosBoth1CmdRef);
+			XPLMCommandOnce(gSpMagnetosBoth2CmdRef);
+		} else if (gSpNumberOfEngines == 3) {
+			XPLMCommandOnce(gSpMagnetosBoth1CmdRef);
+			XPLMCommandOnce(gSpMagnetosBoth2CmdRef);
+			XPLMCommandOnce(gSpMagnetosBoth3CmdRef);
+		} else if (gSpNumberOfEngines == 4) {
+			XPLMCommandOnce(gSpMagnetosBoth1CmdRef);
+			XPLMCommandOnce(gSpMagnetosBoth2CmdRef);
+			XPLMCommandOnce(gSpMagnetosBoth3CmdRef);
+			XPLMCommandOnce(gSpMagnetosBoth4CmdRef);
+		}
 		break;
 	case 0x020000:
-		XPLMCommandOnce(gSpEngineStart1CmdRef);
+		if (gSpNumberOfEngines == 1) {
+			XPLMCommandOnce(gSpEngineStart1CmdRef);
+		} else if (gSpNumberOfEngines == 2) {
+			XPLMCommandOnce(gSpEngineStart1CmdRef);
+			XPLMCommandOnce(gSpEngineStart2CmdRef);
+		} else if (gSpNumberOfEngines == 3) {
+			XPLMCommandOnce(gSpEngineStart1CmdRef);
+			XPLMCommandOnce(gSpEngineStart2CmdRef);
+			XPLMCommandOnce(gSpEngineStart3CmdRef);
+		} else if (gSpNumberOfEngines == 4) {
+			XPLMCommandOnce(gSpEngineStart1CmdRef);
+			XPLMCommandOnce(gSpEngineStart2CmdRef);
+			XPLMCommandOnce(gSpEngineStart3CmdRef);
+			XPLMCommandOnce(gSpEngineStart4CmdRef);
+		}
 		break;
 	default:
 		break;
@@ -263,7 +335,7 @@ int sp_process(uint32_t msg) {
     uint32_t lightsTaxi = msg & SP_READ_LIGHTS_TAXI_MASK;
     uint32_t lightsStrobe = msg & SP_READ_LIGHTS_STROBE_MASK;
     uint32_t lightsNav = msg & SP_READ_LIGHTS_NAV_MASK;
-    uint32_t lightsBeacon = msg & SP_READ_LIGHTS_PANEL_MASK;
+    uint32_t lightsBeacon = msg & SP_READ_LIGHTS_BEACON_MASK;
     uint32_t lightsPanel = msg & SP_READ_LIGHTS_PANEL_MASK;
     uint32_t cowl = msg & SP_READ_COWL_MASK;
     uint32_t pitot = msg & SP_READ_PITOT_HEAT_MASK;
@@ -274,12 +346,81 @@ int sp_process(uint32_t msg) {
     uint32_t masterAltBattery = msg & SP_READ_MASTER_ALT_MASK;
 
     if (gEngineKnob) {
+    	gEngineKnobState = gEngineKnob;
     	sp_process_knob(gEngineKnob);
     }
     if (landingGearUp) {
     	XPLMCommandOnce(gSpLandingGearUpCmdRef);
     } else if (landingGearDown) {
     	XPLMCommandOnce(gSpLandingGearDownCmdRef);
+    }
+
+    if (lightsLanding) {
+    	XPLMCommandOnce(gSpLightsLandingOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpLightsLandingOffCmdRef);
+    }
+    if (lightsTaxi) {
+    	XPLMCommandOnce(gSpLightsTaxiOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpLightsTaxiOffCmdRef);
+    }
+    if (lightsPanel) {
+    	XPLMCommandOnce(gSpLightsPanelOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpLightsPanelOffCmdRef);
+    }
+    if (lightsBeacon) {
+    	XPLMCommandOnce(gSpLightsBeaconOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpLightsBeaconOffCmdRef);
+    }
+    if (lightsNav) {
+    	XPLMCommandOnce(gSpLightsNavOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpLightsNavOffCmdRef);
+    }
+    if (lightsStrobe) {
+    	XPLMCommandOnce(gSpLightsStrobeOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpLightsStrobeOffCmdRef);
+    }
+    if (masterBattery) {
+    	XPLMCommandOnce(gSpMasterBatteryOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpMasterBatteryOffCmdRef);
+    }
+    if (masterAltBattery) {
+    	XPLMCommandOnce(gSpMasterAltBatteryOnCmdRef);
+    	XPLMCommandOnce(gSpGeneratorOn1CmdRef);
+    } else {
+    	XPLMCommandOnce(gSpMasterAltBatteryOffCmdRef);
+    	XPLMCommandOnce(gSpGeneratorOff1CmdRef);
+    }
+    if (avionicsMaster) {
+    	XPLMCommandOnce(gSpMasterAvionicsOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpMasterAvionicsOffCmdRef);
+    }
+    if (fuelPump) {
+    	XPLMCommandOnce(gSpFuelPumpOn1CmdRef);
+    } else {
+    	XPLMCommandOnce(gSpFuelPumpOff1CmdRef);
+    }
+    if (deice) {
+    	XPLMCommandOnce(gSpDeIceOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpDeIceOffCmdRef);
+    }
+    if (pitot) {
+    	XPLMCommandOnce(gSpPitotHeatOnCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpPitotHeatOffCmdRef);
+    }
+    if (cowl) {
+    	XPLMCommandOnce(gSpCowlOpenCmdRef);
+    } else {
+    	XPLMCommandOnce(gSpCowlClosedCmdRef);
     }
 
     return res;
@@ -292,7 +433,7 @@ void sp_update_datarefs() {
     gSpBatteryArrayOn = (XPLMGetDatai(gSpCowlFlapsDataRef));
     gSpGearRetract = (XPLMGetDatai(gSpGearRetractDataRef));
     gSpOnGround = (XPLMGetDatai(gSpOnGroundDataRef));
-    gSpLandingGearStatus = (XPLMGetDataf(gSpLandingGearStatusDataRef));
+    XPLMGetDatavf(gSpLandingGearStatusDataRef, gSpLandingGearStatus, 0, 10);
     gSpGear1Fail = (XPLMGetDatai(gSpGear1FailDataRef));
     gSpGear2Fail = (XPLMGetDatai(gSpGear2FailDataRef));
     gSpGear3Fail = (XPLMGetDatai(gSpGear3FailDataRef));
@@ -516,6 +657,10 @@ void *spRun(void *ptr_thread_data) {
 				msg += buf[0];
 				sp_process(msg);
 			}
+		    if (gEngineKnobState == 0x020000) {
+		    	// Start engine
+				XPLMCommandOnce(gSpEngineStart1CmdRef);
+		    }
 			sp_panel_write(writeBuf);
 		}
 		///////////////////////////////////////////////////////////////////////////
