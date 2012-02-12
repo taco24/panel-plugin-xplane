@@ -194,7 +194,16 @@ float gSpLandingGearStatus[10];
 uint32_t gSpGear1Fail = 0;
 uint32_t gSpGear2Fail = 0;
 uint32_t gSpGear3Fail = 0;
-
+float gSpOpencowl[8], gSpClosecowl[8];
+int gSpBatArrayOn[8];
+int gSpGearSwitchUp;
+static uint32_t failed1up;
+static uint32_t failed2up;
+static uint32_t failed3up;
+static uint32_t failed1dn;
+static uint32_t failed2dn;
+static uint32_t failed3dn;
+static unsigned char gearled;
 
 int SwitchPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
@@ -224,11 +233,175 @@ int SwitchPanelCommandHandler(XPLMCommandRef    inCommand,
 
 
 inline void sp_led_update() {
-	// Gear is down and locked
-	if (gSpLandingGearStatus[0] < 1.0 && gSpLandingGearStatus[0] > 0.0 ) {
-		writeBuf[1] = 0x38;
+
+	if (gSpGearRetract > 0) {
+		gearled = 0x00;
+		if(gSpOnGround > 0) {
+	    	if(gSpGearSwitchUp == 1){
+	    		gearled = 0x07;
+	    	} else {
+	    		gearled = 0x38;
+	    	}
+	    	return;
+	    }
+
+		XPLMGetDatavf(gSpLandingGearStatusDataRef, gSpLandingGearStatus, 0, 10);
+        // Gear is down and locked
+        if (gSpLandingGearStatus[0] == 1) {
+            gearled |= (1<<0);   // * set bit 0 in gearled to 1 *
+            gearled &= ~(1<<3);   // * clear bit 3 in gearled to 0 *
+        }
+        if (gSpLandingGearStatus[1] == 1) {
+            gearled |= (1<<1);   // * set bit 1 in gearled to 1 *
+            gearled &= ~(1<<4);   // * clear bit 4 in gearled to 0 *
+        }
+        if (gSpLandingGearStatus[2] == 1) {
+            gearled |= (1<<2);   // * set bit 2 in gearled to 1 *
+            gearled &= ~(1<<5);   // * clear bit 5 in gearled to 0 *
+        }
+        // Gear is in motion
+        if ((gSpLandingGearStatus[0] > 0) &&(gSpLandingGearStatus[0] < 1)) {
+            gearled |= (1<<3);   // * set bit 3 in gearled to 1 *
+            gearled &= ~(1<<0);   // * clear bit 0 in gearled to 0 *
+        }
+        if ((gSpLandingGearStatus[1] > 0) &&(gSpLandingGearStatus[1] < 1)) {
+            gearled |= (1<<4);   // * set bit 4 in gearled to 1 *
+            gearled &= ~(1<<1);   // * clear bit 1 in gearled to 0 *
+        }
+        if ((gSpLandingGearStatus[2] > 0) &&(gSpLandingGearStatus[2] < 1)) {
+            gearled |= (1<<5);   // * set bit 5 in gearled to 1 *
+            gearled &= ~(1<<2);   // * clear bit 2 in gearled to 0 *
+        }
+        // Gear is up
+        if (gSpLandingGearStatus[0] == 0) {
+            gearled &= ~(1<<0);   // * clear bit 0 in gearled to 0 *
+            gearled &= ~(1<<3);   // * clear bit 3 in gearled to 0 *
+        }
+        if (gSpLandingGearStatus[1] == 0) {
+            gearled &= ~(1<<1);   // * clear bit 1 in gearled to 0 *
+            gearled &= ~(1<<4);   // * clear bit 4 in gearled to 0 *
+        }
+        if (gSpLandingGearStatus[2] == 0) {
+            gearled &= ~(1<<2);   // * clear bit 2 in gearled to 0 *
+            gearled &= ~(1<<5);   // * clear bit 5 in gearled to 0 *
+        }
+        if (gSpGearSwitchUp == 1) {
+            // Nose gear had failed
+        	if (failed1dn == 0) {
+            	if (gSpGear1Fail == 6) {
+            		failed1up = 1;
+            	}
+            	if (gSpGear1Fail == 0) {
+            		failed1up = 0;
+            	}
+            	if (failed1up == 1) {
+            		gearled &= ~(1<<3);   // * set bit 3 in gearled to 1 *
+            		gearled &= ~(1<<0);   // * clear bit 1 in gearled to 0 *
+            	}
+
+            }
+            if (failed1dn == 1) {
+                gearled |= (1<<3);   // * set bit 3 in gearled to 1 *
+                gearled &= ~(1<<0);   // * clear bit 0 in gearled to 0 *
+            }
+
+            // Left gear has failed
+            if (failed2dn == 0) {
+            	if (gSpGear2Fail == 6) {
+            		failed2up = 1;
+            	}
+            	if (gSpGear2Fail == 0) {
+            		failed2up = 0;
+            	}
+            	if (failed2up == 1) {
+            		gearled &= ~(1<<4);   // * set bit 3 in gearled to 1 *
+            		gearled &= ~(1<<1);   // * clear bit 1 in gearled to 0 *
+            	}
+            }
+            if (failed2dn == 1) {
+                gearled |= (1<<4);   // * set bit 3 in gearled to 1 *
+                gearled &= ~(1<<1);   // * clear bit 0 in gearled to 0 *
+            }
+
+            // Right gear has failed
+            if (failed3dn == 0) {
+            	if (gSpGear3Fail == 6) {
+            		failed3up = 1;
+            	}
+            	if (gSpGear3Fail == 0) {
+            		failed3up = 0;
+            	}
+            	if (failed3up == 1) {
+            		gearled &= ~(1<<5);   // * set bit 3 in gearled to 1 *
+            		gearled &= ~(1<<2);   // * clear bit 1 in gearled to 0 *
+            	}
+            }
+            if (failed3dn == 1) {
+                gearled |= (1<<5);   // * set bit 3 in gearled to 1 *
+                gearled &= ~(1<<2);   // * clear bit 0 in gearled to 0 *
+            }
+        }
+        if (gSpGearSwitchUp == 0) {
+           // Nose gear has failed
+           if (failed1up == 0) {
+        	   if (gSpGear1Fail == 6) {
+        		   failed1dn = 1;
+        	   }
+        	   if (gSpGear1Fail == 0) {
+        		   failed1dn = 0;
+        	   }
+        	   if (failed1dn == 1) {
+        		   gearled |= (1<<0);   // * set bit 0 in gearled to 1 *
+        		   gearled &= ~(1<<3);   // * clear bit 3 in gearled to 0 *
+        	   }
+           }
+           if (failed1up == 1) {
+               gearled |= (1<<3);   // * set bit 3 in gearled to 1 *
+               gearled &= ~(1<<0);   // * clear bit 0 in gearled to 0 *
+           }
+
+           // Left gear has failed
+           if (failed2up == 0) {
+        	   if (gSpGear2Fail == 6) {
+        		   failed2dn = 1;
+        	   }
+        	   if (gSpGear2Fail == 0) {
+        		   failed2dn = 0;
+        	   }
+        	   if (failed2dn == 1) {
+        		   gearled |= (1<<1);   // * set bit 0 in gearled to 1 *
+        		   gearled &= ~(1<<4);   // * clear bit 3 in gearled to 0 *
+        	   }
+
+           }
+           if (failed2up == 1) {
+               gearled |= (1<<4);   // * set bit 3 in gearled to 1 *
+               gearled &= ~(1<<1);   // * clear bit 0 in gearled to 0 *
+           }
+
+           // Right gear has failed
+           if (failed3up == 0) {
+        	   if (gSpGear3Fail == 6) {
+        		   failed3dn = 1;
+        	   }
+        	   if (gSpGear3Fail == 0) {
+        		   failed3dn = 0;
+        	   }
+        	   if (failed3dn == 1) {
+        		   gearled |= (1<<2);   // * set bit 0 in gearled to 1 *
+        		   gearled &= ~(1<<5);   // * clear bit 3 in gearled to 0 *
+        	   }
+
+           }
+           if (failed3up == 1) {
+               gearled |= (1<<5);   // * set bit 3 in gearled to 1 *
+               gearled &= ~(1<<2);   // * clear bit 0 in gearled to 0 *
+           }
+
+        }
+
 	} else {
-		writeBuf[1] = 0x07;
+		gearled = 0x00;
 	}
 }
 
@@ -350,8 +523,10 @@ int sp_process(uint32_t msg) {
     	sp_process_knob(gEngineKnob);
     }
     if (landingGearUp) {
+    	gSpGearSwitchUp = 1;
     	XPLMCommandOnce(gSpLandingGearUpCmdRef);
     } else if (landingGearDown) {
+    	gSpGearSwitchUp = 0;
     	XPLMCommandOnce(gSpLandingGearDownCmdRef);
     }
 
@@ -366,9 +541,9 @@ int sp_process(uint32_t msg) {
     	XPLMCommandOnce(gSpLightsTaxiOffCmdRef);
     }
     if (lightsPanel) {
-    	XPLMCommandOnce(gSpLightsPanelOnCmdRef);
+    	XPLMSetDataf(gSpCockpitLightsDataRef, 1);
     } else {
-    	XPLMCommandOnce(gSpLightsPanelOffCmdRef);
+    	XPLMSetDataf(gSpCockpitLightsDataRef, 0);
     }
     if (lightsBeacon) {
     	XPLMCommandOnce(gSpLightsBeaconOnCmdRef);
@@ -386,16 +561,134 @@ int sp_process(uint32_t msg) {
     	XPLMCommandOnce(gSpLightsStrobeOffCmdRef);
     }
     if (masterBattery) {
-    	XPLMCommandOnce(gSpMasterBatteryOnCmdRef);
+    	if (gSpNumberOfBatteries == 1) {
+    		gSpBatArrayOn[0] = 1;
+    	} else if (gSpNumberOfBatteries == 2) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    	} else if (gSpNumberOfBatteries == 3) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    		gSpBatArrayOn[2] = 1;
+    	} else if (gSpNumberOfBatteries == 4) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    		gSpBatArrayOn[2] = 1;
+    		gSpBatArrayOn[3] = 1;
+    	} else if (gSpNumberOfBatteries == 5) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    		gSpBatArrayOn[2] = 1;
+    		gSpBatArrayOn[3] = 1;
+    		gSpBatArrayOn[4] = 1;
+    	} else if (gSpNumberOfBatteries == 6) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    		gSpBatArrayOn[2] = 1;
+    		gSpBatArrayOn[3] = 1;
+    		gSpBatArrayOn[4] = 1;
+    		gSpBatArrayOn[5] = 1;
+    	} else if (gSpNumberOfBatteries == 7) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    		gSpBatArrayOn[2] = 1;
+    		gSpBatArrayOn[3] = 1;
+    		gSpBatArrayOn[4] = 1;
+    		gSpBatArrayOn[5] = 1;
+    		gSpBatArrayOn[6] = 1;
+    	} else if (gSpNumberOfBatteries == 8) {
+    		gSpBatArrayOn[0] = 1;
+    		gSpBatArrayOn[1] = 1;
+    		gSpBatArrayOn[2] = 1;
+    		gSpBatArrayOn[3] = 1;
+    		gSpBatArrayOn[4] = 1;
+    		gSpBatArrayOn[5] = 1;
+    		gSpBatArrayOn[6] = 1;
+    		gSpBatArrayOn[7] = 1;
+    	}
+    	XPLMSetDatavi(gSpBatteryArrayOnDataRef, gSpBatArrayOn, 0, 8);
     } else {
-    	XPLMCommandOnce(gSpMasterBatteryOffCmdRef);
+    	if (gSpNumberOfBatteries == 1) {
+    		gSpBatArrayOn[0] = 0;
+    	} else if (gSpNumberOfBatteries == 2) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    	} else if (gSpNumberOfBatteries == 3) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    		gSpBatArrayOn[2] = 0;
+    	} else if (gSpNumberOfBatteries == 4) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    		gSpBatArrayOn[2] = 0;
+    		gSpBatArrayOn[3] = 0;
+    	} else if (gSpNumberOfBatteries == 5) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    		gSpBatArrayOn[2] = 0;
+    		gSpBatArrayOn[3] = 0;
+    		gSpBatArrayOn[4] = 0;
+    	} else if (gSpNumberOfBatteries == 6) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    		gSpBatArrayOn[2] = 0;
+    		gSpBatArrayOn[3] = 0;
+    		gSpBatArrayOn[4] = 0;
+    		gSpBatArrayOn[5] = 0;
+    	} else if (gSpNumberOfBatteries == 7) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    		gSpBatArrayOn[2] = 0;
+    		gSpBatArrayOn[3] = 0;
+    		gSpBatArrayOn[4] = 0;
+    		gSpBatArrayOn[5] = 0;
+    		gSpBatArrayOn[6] = 0;
+    	} else if (gSpNumberOfBatteries == 8) {
+    		gSpBatArrayOn[0] = 0;
+    		gSpBatArrayOn[1] = 0;
+    		gSpBatArrayOn[2] = 0;
+    		gSpBatArrayOn[3] = 0;
+    		gSpBatArrayOn[4] = 0;
+    		gSpBatArrayOn[5] = 0;
+    		gSpBatArrayOn[6] = 0;
+    		gSpBatArrayOn[7] = 0;
+    	}
+    	XPLMSetDatavi(gSpBatteryArrayOnDataRef, gSpBatArrayOn, 0, 8);
     }
     if (masterAltBattery) {
     	XPLMCommandOnce(gSpMasterAltBatteryOnCmdRef);
-    	XPLMCommandOnce(gSpGeneratorOn1CmdRef);
+    	if (gSpNumberOfGenerators == 1) {
+        	XPLMCommandOnce(gSpGeneratorOn1CmdRef);
+    	} else if (gSpNumberOfGenerators == 2) {
+        	XPLMCommandOnce(gSpGeneratorOn1CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOn2CmdRef);
+    	} else if (gSpNumberOfGenerators == 3) {
+        	XPLMCommandOnce(gSpGeneratorOn1CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOn2CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOn3CmdRef);
+    	} else if (gSpNumberOfGenerators == 4) {
+        	XPLMCommandOnce(gSpGeneratorOn1CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOn2CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOn3CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOn4CmdRef);
+    	}
     } else {
     	XPLMCommandOnce(gSpMasterAltBatteryOffCmdRef);
-    	XPLMCommandOnce(gSpGeneratorOff1CmdRef);
+    	if (gSpNumberOfGenerators == 1) {
+        	XPLMCommandOnce(gSpGeneratorOff1CmdRef);
+    	} else if (gSpNumberOfGenerators == 2) {
+        	XPLMCommandOnce(gSpGeneratorOff1CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOff2CmdRef);
+    	} else if (gSpNumberOfGenerators == 3) {
+        	XPLMCommandOnce(gSpGeneratorOff1CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOff2CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOff3CmdRef);
+    	} else if (gSpNumberOfGenerators == 4) {
+        	XPLMCommandOnce(gSpGeneratorOff1CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOff2CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOff3CmdRef);
+        	XPLMCommandOnce(gSpGeneratorOff4CmdRef);
+    	}
     }
     if (avionicsMaster) {
     	XPLMCommandOnce(gSpMasterAvionicsOnCmdRef);
@@ -403,14 +696,42 @@ int sp_process(uint32_t msg) {
     	XPLMCommandOnce(gSpMasterAvionicsOffCmdRef);
     }
     if (fuelPump) {
-    	XPLMCommandOnce(gSpFuelPumpOn1CmdRef);
+    	if (gSpNumberOfEngines == 1) {
+        	XPLMCommandOnce(gSpFuelPumpOn1CmdRef);
+    	} else if (gSpNumberOfEngines == 2) {
+        	XPLMCommandOnce(gSpFuelPumpOn1CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOn2CmdRef);
+    	} else if (gSpNumberOfEngines == 3) {
+        	XPLMCommandOnce(gSpFuelPumpOn1CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOn2CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOn3CmdRef);
+    	} else if (gSpNumberOfEngines == 4) {
+        	XPLMCommandOnce(gSpFuelPumpOn1CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOn2CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOn3CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOn4CmdRef);
+    	}
     } else {
-    	XPLMCommandOnce(gSpFuelPumpOff1CmdRef);
+    	if (gSpNumberOfEngines == 1) {
+        	XPLMCommandOnce(gSpFuelPumpOff1CmdRef);
+    	} else if (gSpNumberOfEngines == 2) {
+        	XPLMCommandOnce(gSpFuelPumpOff1CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOff2CmdRef);
+    	} else if (gSpNumberOfEngines == 3) {
+        	XPLMCommandOnce(gSpFuelPumpOff1CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOff2CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOff3CmdRef);
+    	} else if (gSpNumberOfEngines == 4) {
+        	XPLMCommandOnce(gSpFuelPumpOff1CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOff2CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOff3CmdRef);
+        	XPLMCommandOnce(gSpFuelPumpOff4CmdRef);
+    	}
     }
     if (deice) {
-    	XPLMCommandOnce(gSpDeIceOnCmdRef);
+    	XPLMSetDatai(gSpAntiIceDataRef, 1);
     } else {
-    	XPLMCommandOnce(gSpDeIceOffCmdRef);
+    	XPLMSetDatai(gSpAntiIceDataRef, 0);
     }
     if (pitot) {
     	XPLMCommandOnce(gSpPitotHeatOnCmdRef);
@@ -418,9 +739,39 @@ int sp_process(uint32_t msg) {
     	XPLMCommandOnce(gSpPitotHeatOffCmdRef);
     }
     if (cowl) {
-    	XPLMCommandOnce(gSpCowlOpenCmdRef);
+    	if (gSpNumberOfEngines == 1) {
+    		gSpOpencowl[0] = 1;
+    	} else if (gSpNumberOfEngines == 2) {
+    		gSpOpencowl[0] = 1;
+    		gSpOpencowl[1] = 1;
+    	} else if (gSpNumberOfEngines == 3) {
+    		gSpOpencowl[0] = 1;
+    		gSpOpencowl[1] = 1;
+    		gSpOpencowl[2] = 1;
+    	} else if (gSpNumberOfEngines == 4) {
+    		gSpOpencowl[0] = 1;
+    		gSpOpencowl[1] = 1;
+    		gSpOpencowl[2] = 1;
+    		gSpOpencowl[3] = 1;
+    	}
+    	XPLMSetDatavf(gSpCowlFlapsDataRef, gSpOpencowl, 0, 8);
     } else {
-    	XPLMCommandOnce(gSpCowlClosedCmdRef);
+    	if (gSpNumberOfEngines == 1) {
+    		gSpClosecowl[0] = 1;
+    	} else if (gSpNumberOfEngines == 2) {
+    		gSpClosecowl[0] = 1;
+    		gSpClosecowl[1] = 1;
+    	} else if (gSpNumberOfEngines == 3) {
+    		gSpClosecowl[0] = 1;
+    		gSpClosecowl[1] = 1;
+    		gSpClosecowl[2] = 1;
+    	} else if (gSpNumberOfEngines == 4) {
+    		gSpClosecowl[0] = 1;
+    		gSpClosecowl[1] = 1;
+    		gSpClosecowl[2] = 1;
+    		gSpClosecowl[3] = 1;
+    	}
+    	XPLMSetDatavf(gSpCowlFlapsDataRef, gSpClosecowl, 0, 8);
     }
 
     return res;
@@ -598,7 +949,10 @@ void sp_init() {
     gSpGear1FailDataRef = XPLMFindDataRef(sSP_GEAR_1_FAIL_DR);
     gSpGear2FailDataRef = XPLMFindDataRef(sSP_GEAR_2_FAIL_DR);
     gSpGear3FailDataRef = XPLMFindDataRef(sSP_GEAR_3_FAIL_DR);
-
+    gSpAntiIceDataRef = XPLMFindDataRef(sSP_ANTI_ICE_DR);
+    gSpCowlFlapsDataRef = XPLMFindDataRef(sSP_COWL_FLAPS_DR);
+    gSpCockpitLightsDataRef = XPLMFindDataRef(sSP_COCKPIT_LIGHTS_DR);
+    gSpBatteryArrayOnDataRef = XPLMFindDataRef(sSP_BATTERY_ARRAY_ON_DR);
     sp_update_datarefs();
 }
 
@@ -661,7 +1015,10 @@ void *spRun(void *ptr_thread_data) {
 		    	// Start engine
 				XPLMCommandOnce(gSpEngineStart1CmdRef);
 		    }
-			sp_panel_write(writeBuf);
+		    if (gSpGearRetract > 0) {
+		    	writeBuf[1] = gearled;
+				sp_panel_write(writeBuf);
+		    }
 		}
 		///////////////////////////////////////////////////////////////////////////
 
