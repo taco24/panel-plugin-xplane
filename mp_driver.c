@@ -36,7 +36,7 @@ int mp_panel_open() {
 
 	if (!mpHandle) {
 		XPLMDebugString("-> CP: mp_driver.panel_open: unable to open device.\n");
-		return 1;
+		return -1;
 	}
 	wchar_t wstr[MAX_STR];
 	res = hid_get_manufacturer_string(mpHandle, wstr, MAX_STR);

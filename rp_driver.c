@@ -37,7 +37,7 @@ int panel_open() {
 
 	if (!rpHandle) {
 		XPLMDebugString("-> CP: rp_driver.panel_open: unable to open device.\n");
-		return 1;
+		return -1;
 	}
 	wchar_t wstr[MAX_STR];
 	res = hid_get_manufacturer_string(rpHandle, wstr, MAX_STR);

@@ -835,8 +835,13 @@ void *rpRun(void *ptr_thread_data) {
 
 	gPtrThreadData = (struct rp_thread_data *) ptr_thread_data;
 
-	panel_open();
-	XPLMDebugString("-> CP: rp_controller.run: panel opened.\n");
+	int result = panel_open();
+	if (result < 0) {
+		XPLMDebugString("-> CP: rp_controller.rpRun: shutdown thread.\n");
+		pthread_exit(NULL);
+		return 0;
+	}
+	XPLMDebugString("-> CP: rp_controller.rpRun: panel opened.\n");
 
 	last_mainloop_idle = sys_time_clock_get_time_usec();
 	// while stop == 0 calculate position.
@@ -853,7 +858,7 @@ void *rpRun(void *ptr_thread_data) {
 			inReportBytesCount = panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
 				if (inReportBytesCount > 3) {
-					sprintf(tmp, "-> CP: pp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
+					sprintf(tmp, "-> CP: rp_controller.rpRun: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
 				}
 				counter2++;
@@ -876,7 +881,7 @@ void *rpRun(void *ptr_thread_data) {
 			inReportBytesCount = panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
 				if (inReportBytesCount > 3) {
-					sprintf(tmp, "-> CP: pp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
+					sprintf(tmp, "-> CP: rp_controller.rpRun: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
 				}
 				uint32_t msg = 0;
@@ -889,8 +894,8 @@ void *rpRun(void *ptr_thread_data) {
 		}
 		///////////////////////////////////////////////////////////////////////////
 
-		if (loop_start_time - last_mainloop_idle >= 100000) {
-			XPLMDebugString("-> CP: rp_controller.run: CRITICAL WARNING! CPU LOAD TOO HIGH.\n");
+		if (loop_start_time - last_mainloop_idle >= MAX_DELAY_TIME) {
+			XPLMDebugString("-> CP: rp_controller.rpRun: CRITICAL WARNING! CPU LOAD TOO HIGH.\n");
 			last_mainloop_idle = loop_start_time;//reset to prevent multiple messages
 		} else {
 			//writeConsole(0, 0, "CPU LOAD OK.");

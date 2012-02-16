@@ -963,7 +963,12 @@ void *spRun(void *ptr_thread_data) {
 
 	gPtrThreadData = (struct sp_thread_data *) ptr_thread_data;
 
-	sp_panel_open();
+	int result = sp_panel_open();
+	if (result < 0) {
+		XPLMDebugString("-> CP: sp_controller.spRun: shutdown thread.\n");
+		pthread_exit(NULL);
+		return 0;
+	}
 	XPLMDebugString("-> CP: sp_controller.spRun: panel opened.\n");
 
 	last_mainloop_idle = sys_time_clock_get_time_usec();
@@ -1022,7 +1027,7 @@ void *spRun(void *ptr_thread_data) {
 		}
 		///////////////////////////////////////////////////////////////////////////
 
-		if (loop_start_time - last_mainloop_idle >= 100000) {
+		if (loop_start_time - last_mainloop_idle >= MAX_DELAY_TIME) {
 			XPLMDebugString("-> CP: sp_controller.run: CRITICAL WARNING! CPU LOAD TOO HIGH.\n");
 			last_mainloop_idle = loop_start_time;//reset to prevent multiple messages
 		} else {

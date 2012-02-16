@@ -21,6 +21,7 @@
 #include "rp_controller.h"
 #include "mp_controller.h"
 #include "sp_controller.h"
+#include "mcp_controller.h"
 
 enum {
     PLUGIN_PLANE_ID = 0
@@ -43,6 +44,11 @@ struct thread_data gSpThreadData;
 pthread_t gSpThread;
 int gSpThreadID = 3;
 int gSpThreadReturnCode = 0;
+
+struct thread_data gMcpThreadData;
+pthread_t gMcpThread;
+int gMcpThreadID = 2;
+int gMcpThreadReturnCode = 0;
 
 float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
                                    float   inElapsedTimeSinceLastFlightLoop,
@@ -103,6 +109,17 @@ PLUGIN_API int XPluginEnable(void) {
 		XPLMDebugString("-> CP: XPluginEnable: SpThread started.\n");
 	}
 
+	// MCPPro Panel
+	gMcpThreadData.thread_id = gMcpThreadID;
+	gMcpThreadData.stop = 0;
+	gMcpThreadReturnCode = pthread_create(&gMcpThread, NULL, mcpRun,
+			(void *) &gMcpThreadData);
+	if (gMcpThreadReturnCode) {
+		XPLMDebugString("-> CP: XPluginEnable: Could not start McpThread.\n");
+		return 0;
+	} else {
+		XPLMDebugString("-> CP: XPluginEnable: McpThread started.\n");
+	}
 
 	return 1;
 }
@@ -112,6 +129,7 @@ PLUGIN_API void XPluginDisable(void) {
 	gRpThreadData.stop = 1;
 	gMpThreadData.stop = 1;
 	gSpThreadData.stop = 1;
+	gMcpThreadData.stop = 1;
 #if IBM
 	Sleep(500);
 #else

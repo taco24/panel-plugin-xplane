@@ -14,6 +14,8 @@
 #define SLEEP_TIME       (5000)
 #endif
 
+#define MAX_DELAY_TIME   (500000)
+
 struct thread_data {
 	int isRunning;  // is calculation finished
 	int thread_id; 	// id of the thread
@@ -21,6 +23,12 @@ struct thread_data {
 };
 
 struct mp_thread_data {
+	int isRunning;  // is calculation finished
+	int thread_id; 	// id of the thread
+	int stop;       // stop thread
+};
+
+struct mcp_thread_data {
 	int isRunning;  // is calculation finished
 	int thread_id; 	// id of the thread
 	int stop;       // stop thread

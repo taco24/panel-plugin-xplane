@@ -442,7 +442,12 @@ void *mpRun(void *ptr_thread_data) {
 
 	gPtrThreadData = (struct mp_thread_data *) ptr_thread_data;
 
-	mp_panel_open();
+	int result = mp_panel_open();
+	if (result < 0) {
+		XPLMDebugString("-> CP: mp_controller.mpRun: shutdown thread.\n");
+		pthread_exit(NULL);
+		return 0;
+	}
 	XPLMDebugString("-> CP: mp_controller.mp_run: panel opened.\n");
 
 	last_mainloop_idle = sys_time_clock_get_time_usec();
@@ -550,7 +555,7 @@ void *mpRun(void *ptr_thread_data) {
 		}
 		///////////////////////////////////////////////////////////////////////////
 
-		if (loop_start_time - last_mainloop_idle >= 100000) {
+		if (loop_start_time - last_mainloop_idle >= MAX_DELAY_TIME) {
 			XPLMDebugString("-> CP: mp_controller.run: CRITICAL WARNING! CPU LOAD TOO HIGH.\n");
 			last_mainloop_idle = loop_start_time;//reset to prevent multiple messages
 		} else {
