@@ -3,7 +3,6 @@
 #else
 #include <unistd.h>
 #endif
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -34,13 +33,21 @@ enum {
     MCP_AP_FD_UP_CMD_MSG,
     MCP_AP_FD_DN_CMD_MSG = MCP_AP_FD_UP_CMD_MSG + 1,
     MCP_AP_FD_OFF_CMD_MSG,
+    MCP_AP_FD_ON_CMD_MSG,
+    MCP_AP_AUTOTHROTTLE_ON_CMD_MSG,
+    MCP_AP_AUTOTHROTTLE_OFF_CMD_MSG,
     MCP_AP_HEADING_CMD_MSG,
     MCP_AP_NAV_CMD_MSG,
+    MCP_AP_VNAV_CMD_MSG,
+    MCP_AP_LVL_CHANGE_CMD_MSG,
     MCP_AP_IAS_CMD_MSG,
     MCP_AP_ALT_CMD_MSG,
     MCP_AP_VS_CMD_MSG,
     MCP_AP_APR_CMD_MSG,
     MCP_AP_REV_CMD_MSG,
+    MCP_AP_AIRSPEED_SYNC_CMD_MSG,
+    MCP_AP_HEADING_SYNC_CMD_MSG,
+    MCP_AP_ALTITUDE_SYNC_CMD_MSG,
     MCP_PITCH_TRIM_DN_CMD_MSG,
     MCP_PITCH_TRIM_UP_CMD_MSG = MCP_PITCH_TRIM_DN_CMD_MSG + 1,
     MCP_PITCH_TRIM_TAKEOFF_CMD_MSG,
@@ -60,7 +67,6 @@ static const int min_mainloop_time = 5000;
 static long last_mainloop_idle = 0;
 static struct mcp_thread_data *gPtrThreadData;
 static unsigned char buf[MCP_IN_BUF_SIZE];
-static unsigned char writeBuf[MCP_OUT_BUF_SIZE];
 static char tmp[100];
 
 /* MULTI PANEL Command Refs */
@@ -68,8 +74,8 @@ XPLMCommandRef gMcpAltDnCmdRef = NULL;
 XPLMCommandRef gMcpAltUpCmdRef = NULL;
 XPLMCommandRef gMcpVrtclSpdDnCmdRef = NULL;
 XPLMCommandRef gMcpVrtclSpdUpCmdRef = NULL;
-XPLMCommandRef gMcpAsDnCmdRef = NULL;
-XPLMCommandRef gMcpAsUpCmdRef = NULL;
+XPLMCommandRef gMcpIASDnCmdRef = NULL;
+XPLMCommandRef gMcpIASUpCmdRef = NULL;
 XPLMCommandRef gMcpHdgDnCmdRef = NULL;
 XPLMCommandRef gMcpHdgUpCmdRef = NULL;
 XPLMCommandRef gMcpObsHsiDnCmdRef = NULL;
@@ -78,13 +84,22 @@ XPLMCommandRef gMcpObsHsiUpCmdRef = NULL;
 XPLMCommandRef gMcpApFlightDirectorUpCmdRef = NULL;
 XPLMCommandRef gMcpApFlightDirectorDnCmdRef = NULL;
 XPLMCommandRef gMcpApFlightDirectorOffCmdRef = NULL;
+XPLMCommandRef gMcpApFlightDirectorOnCmdRef = NULL;
+XPLMCommandRef gMcpApAutoThrottleOnCmdRef = NULL;
+XPLMCommandRef gMcpApAutoThrottleOffCmdRef = NULL;
+XPLMCommandRef gMcpApAutopilotOnCmdRef = NULL;
+XPLMCommandRef gMcpApAutopilotOffCmdRef = NULL;
 XPLMCommandRef gMcpApHeadingCmdRef = NULL;
 XPLMCommandRef gMcpApNAVCmdRef = NULL;
+XPLMCommandRef gMcpApVNAVCmdRef = NULL;
 XPLMCommandRef gMcpApIASCmdRef = NULL;
 XPLMCommandRef gMcpApAltCmdRef = NULL;
 XPLMCommandRef gMcpApVsCmdRef = NULL;
 XPLMCommandRef gMcpApAprCmdRef = NULL;
 XPLMCommandRef gMcpApRevBackCourseCmdRef = NULL;
+XPLMCommandRef gMcpApAirspeedSyncCmdRef = NULL;
+XPLMCommandRef gMcpApHeadingSyncCmdRef = NULL;
+XPLMCommandRef gMcpApAltitudeSyncCmdRef = NULL;
 
 XPLMCommandRef gMcpPitchTrimDnCmdRef = NULL;
 XPLMCommandRef gMcpPitchTrimUpCmdRef = NULL;
@@ -103,38 +118,64 @@ XPLMDataRef gMcpHsiSrcSelPltDataRef = NULL;
 XPLMDataRef gMcpNav1CrsDefMagPltDataRef = NULL;
 XPLMDataRef gMcpNav2CrsDefMagPltDataRef = NULL;
 XPLMDataRef gMcpGpsCourseDataRef = NULL;
+XPLMDataRef gMcpArspdIsMachDataRef = NULL;
 
 XPLMDataRef gMcpAltDataRef = NULL;
 XPLMDataRef gMcpVSDataRef = NULL;
 XPLMDataRef gMcpIASDataRef = NULL;
 XPLMDataRef gMcpHDGDataRef = NULL;
 XPLMDataRef gMcpCRSDataRef = NULL;
+static int gMcpAlt = 0;
+static int gMcpVS = 0;
+static int gMcpIAS = 0;
+static int gMcpIASIsMach = 0;
+static int gMcpVSSign = 0;
+static int gMcpHDG = 0;
+static int gMcpCRS = 0;
 
-static uint32_t gMcpAlt = 0;
-static int32_t gMcpVS = 0;
-static uint32_t gMcpIAS = 0;
-static uint32_t gMcpHDG = 0;
-static uint32_t gMcpCRS = 0;
-
+XPLMDataRef gMcpApAutopilotModeDataRef = NULL;
+XPLMDataRef gMcpApAutopilotStateDataRef = NULL;
 XPLMDataRef gMcpApMasterDataRef = NULL;
+XPLMDataRef gMcpApMasterSourceDataRef = NULL;
+XPLMDataRef gMcpApFlightDirectorDataRef = NULL;
 XPLMDataRef gMcpApHdgDataRef = NULL;
 XPLMDataRef gMcpApNavDataRef = NULL;
+XPLMDataRef gMcpApVNavArmedDataRef = NULL;
+XPLMDataRef gMcpApVNavDataRef = NULL;
 XPLMDataRef gMcpApIASDataRef = NULL;
 XPLMDataRef gMcpApAltDataRef = NULL;
 XPLMDataRef gMcpApVsDataRef = NULL;
 XPLMDataRef gMcpApAprDataRef = NULL;
 XPLMDataRef gMcpApRevDataRef = NULL;
+XPLMDataRef gMcpApAutoThrottleDataRef = NULL;
+XPLMDataRef gMcpApGlideSlopeDataRef = NULL;
+XPLMDataRef gMcpApTogaDataRef = NULL;
+XPLMDataRef gMcpApTogaLateralDataRef = NULL;
+XPLMDataRef gMcpApPitchDataRef = NULL;
 
-static uint32_t gMcpApButton = 0;
-static uint32_t gMcpHdgButton = 0;
-static uint32_t gMcpNavButton = 0;
-static uint32_t gMcpIasButton = 0;
-static uint32_t gMcpAltButton = 0;
-static uint32_t gMcpVsButton = 0;
-static uint32_t gMcpAprButton = 0;
-static uint32_t gMcpRevButton = 0;
-
-static int gIndicatorKnob = MCP_KNOB_ALT;
+static uint32_t gMcpAutopilotMode = 0;
+static uint32_t gMcpApState = 0;
+static uint32_t gMcpApSourceState = 0;
+static uint32_t gMcpApFlightDirectorState = 0;
+static uint32_t gMcpHdgState = 0;
+static uint32_t gMcpNavState = 0;
+static uint32_t gMcpVNavState = 0;
+static uint32_t gMcpVNavArmed = 0;
+static uint32_t gMcpGlideSlopeState = 0;
+static uint32_t gMcpIasState = 0;
+static uint32_t gMcpAltHoldState = 0;
+static uint32_t gMcpVsState = 0;
+static uint32_t gMcpAprState = 0;
+static uint32_t gMcpRevState = 0;
+static uint32_t gMcpAutoThrottleState = 0;
+static uint32_t gMcpTogaState = 0;
+static uint32_t gMcpTogaLateralState = 0;
+static uint32_t gMcpPitchState = 0;
+static uint32_t gMcpAutopilotState = 0;
+static uint32_t gMcpReadButtonAPState = 0;
+static uint32_t gMcpReadButtonFDLState = 0;
+static uint32_t gMcpReadButtonFDRState = 0;
+static uint32_t gMcpReadButtonATState = 0;
 
 
 int MainControlPanelCommandHandler(XPLMCommandRef    inCommand,
@@ -149,49 +190,53 @@ int MainControlPanelCommandHandler(XPLMCommandRef    inCommand,
  switch ((int)(inRefcon)) {
 		case MCP_ALT_UP_CMD_MSG:
 		case MCP_ALT_DN_CMD_MSG:
-		    gMcpAlt = round(XPLMGetDataf(gMcpAltHoldFtDataRef));
+		    //gMcpAltNew = (int) XPLMGetDataf(gMcpAltHoldFtDataRef);
 			break;
 		case MCP_VS_UP_CMD_MSG:
 		case MCP_VS_DN_CMD_MSG:
-			gMcpVS = round(XPLMGetDataf(gMcpVrtVelDataRef));
+			//gMcpVSNew = (int) XPLMGetDataf(gMcpVrtVelDataRef);
 			break;
 		case MCP_IAS_UP_CMD_MSG:
 		case MCP_IAS_DN_CMD_MSG:
-			gMcpIAS = round(XPLMGetDataf(gMcpArspdDataRef));
+			//gMcpIAS = (int) XPLMGetDataf(gMcpIASDataRef);
 			break;
 		case MCP_HDG_UP_CMD_MSG:
 		case MCP_HDG_DN_CMD_MSG:
-			gMcpHDG = round(XPLMGetDataf(gMcpHdgMagDataRef));
+			//gMcpHDG = (int) XPLMGetDataf(gMcpHdgMagDataRef);
 			break;
 		case MCP_CRS_UP_CMD_MSG:
 		case MCP_CRS_DN_CMD_MSG:
-			gMcpCRS = round(XPLMGetDataf(gMcpHsiSrcSelPltDataRef));
+			//gMcpCRS = (int) XPLMGetDataf(gMcpHsiSrcSelPltDataRef);
 			break;
 		case MCP_AP_FD_UP_CMD_MSG:
 		case MCP_AP_FD_DN_CMD_MSG:
 		case MCP_AP_FD_OFF_CMD_MSG:
-			gMcpApButton = XPLMGetDatai(gMcpApMasterDataRef);
+		case MCP_AP_FD_ON_CMD_MSG:
+			gMcpApFlightDirectorState = XPLMGetDatai(gMcpApFlightDirectorDataRef);
 			break;
 		case MCP_AP_HEADING_CMD_MSG:
-			gMcpHdgButton = XPLMGetDatai(gMcpApHdgDataRef);
+			gMcpHdgState = XPLMGetDatai(gMcpApHdgDataRef);
 			break;
 		case MCP_AP_NAV_CMD_MSG:
-			gMcpNavButton = XPLMGetDatai(gMcpApNavDataRef);
+			gMcpNavState = XPLMGetDatai(gMcpApNavDataRef);
+			break;
+		case MCP_AP_VNAV_CMD_MSG:
+			gMcpVNavState = XPLMGetDatai(gMcpApVNavDataRef);
 			break;
 		case MCP_AP_IAS_CMD_MSG:
-			gMcpIasButton = XPLMGetDatai(gMcpApIASDataRef);
+			gMcpIasState = XPLMGetDatai(gMcpApIASDataRef);
 			break;
 		case MCP_AP_ALT_CMD_MSG:
-			gMcpAltButton = XPLMGetDatai(gMcpApAltDataRef);
+			gMcpAltHoldState = XPLMGetDatai(gMcpApAltDataRef);
 			break;
 		case MCP_AP_VS_CMD_MSG:
-			gMcpVsButton = XPLMGetDatai(gMcpApVsDataRef);
+			gMcpVsState = XPLMGetDatai(gMcpApVsDataRef);
 			break;
 		case MCP_AP_APR_CMD_MSG:
-			gMcpAprButton = XPLMGetDatai(gMcpApAprDataRef);
+			gMcpAprState = XPLMGetDatai(gMcpApAprDataRef);
 			break;
 		case MCP_AP_REV_CMD_MSG:
-			gMcpRevButton = XPLMGetDatai(gMcpApRevDataRef);
+			gMcpRevState = XPLMGetDatai(gMcpApRevDataRef);
 			break;
 		case MCP_PITCH_TRIM_DN_CMD_MSG:
 		case MCP_PITCH_TRIM_UP_CMD_MSG:
@@ -206,20 +251,120 @@ int MainControlPanelCommandHandler(XPLMCommandRef    inCommand,
  return status;
 }
 
+/*
+--------------------------------
+LEDs:
+--------------------------------
+0F 00 00 00 00 -> BLANK ALL
+0F 00 01 00 00 -> SPEED
+0F 00 02 00 00 -> LVL CHG
+0F 00 04 00 00 -> HDG SEL
+0F 00 08 00 00 -> APP
+0F 00 10 00 00 -> ALTHLD
+0F 00 20 00 00 -> V/S
+0F 00 40 00 00 ->
+0F 00 80 00 00 -> F/D (R)
+0F 00 00 01 00 ->
+0F 00 00 02 00 -> CWS (L) (Control Wheel Steering)
+0F 00 00 04 00 -> CWS (R)
+0F 00 00 08 00 ->
+0F 00 00 10 00 ->
+0F 00 00 20 00 ->
+0F 00 00 40 00 -> F/D (L)
+0F 00 00 80 00 -> N1
+0F 00 00 00 01 -> VNAV
+0F 00 00 00 02 -> LNAV
+0F 00 00 00 04 -> ACMD
+0F 00 00 00 08 -> BCMD
+0F 00 00 00 10 -> AutoThrottle/ARM
+0F 00 00 00 20 ->
+0F 00 00 00 40 ->
+0F 00 00 00 80 -> LNAV
+0F 00 FF FF FF -> ALL LEDS
 
-inline void mcp_led_update(uint32_t x, uint32_t y, uint32_t s, uint32_t buttons, uint8_t m[]) {
-    m[0] = 0x00;
-    m[1] = ((x >> 16) & 0xFF);
-    m[2] = ((x >> 12) & 0xFF);
-    m[3] = ((x >>  8) & 0xFF);
-    m[4] = ((x >>  4) & 0xFF);
-    m[5] = ((x >>  0) & 0xFF);
-    m[6] = s;
-    m[7] = ((y >> 12) & 0xFF);
-    m[8] = ((y >>  8) & 0xFF);
-    m[9] = ((y >>  4) & 0xFF);
-    m[10] = ((y >>  0) & 0xFF);
-    m[11] = ((buttons >>  0) & 0xFF);
+http://www.airliners.net/aviation-forums/tech_ops/read.main/17539/
+N1: The Autothrottle will control the speed of the
+    aircraft to the N1 limit set by the Power Mgmt Computer.
+LVL CHG: Tricky one for me. Level Change controls the
+    aircrafts thrust thru the A/T and speed thru the elevators.
+    The altitude selected on the MCP is what Level Change is
+    shooting for.
+Speed: Aircraft speed is controlled by A/T and set to
+    maintain what ever speed is dialed into MCP speed window.
+
+*/
+inline void mcp_update_leds() {
+	unsigned char leds1 = 0x00;
+	unsigned char leds2 = 0x00;
+	unsigned char leds3 = 0x00;
+	unsigned char leds4 = 0x00;
+	// Testing
+	//leds2 = 0x80;
+
+	if (gMcpApState) {
+		if (gMcpApSourceState == 0) {
+			leds4 |= 0x04;
+		} else if (gMcpApSourceState == 1) {
+			leds4 |= 0x08;
+		}
+	}
+	if (gMcpApFlightDirectorState) {
+		leds3 |= 0x40;
+	}
+	if (gMcpReadButtonFDRState) {
+		leds2 |= 0x80;
+	}
+	if (gMcpHdgState) {
+		leds2 |= 0x04;
+	}
+	if ((gMcpAutopilotState) & 0x3000) {
+		// VNAV Armed
+		leds4 |= 0x01;
+	}
+/*	char Buffer[256];
+	sprintf(Buffer,"%d,%d,%d: %d, %d, %d, -%d, %d, %d, -%d, %d, %d, -%d, %d, %d, -%d, %#0x, %d\n",
+			gMcpApState, gMcpApSourceState, gMcpApFlightDirectorState,
+			gMcpHdgState, gMcpNavState,	gMcpVNavState,
+			gMcpIasState, gMcpAltHoldState,	gMcpVsState,
+			gMcpAprState, gMcpRevState,	gMcpAutoThrottleState,
+			gMcpTogaState, gMcpTogaLateralState, gMcpGlideSlopeState,
+			gMcpPitchState, (gMcpAutopilotState), gMcpVNavArmed);
+	XPLMDebugString(Buffer);
+*/	if (gMcpVNavState) {
+		leds4 |= 0x01;
+	}
+	if (gMcpNavState) {
+		// HNAV armed: VOR LOCalizer
+		leds4 |= 0x80;
+	}
+	if (gMcpIasState == 1) {
+		// Speed Hold
+	} else if (gMcpIasState == 2) {
+		// LVL Change
+		leds2 |= 0x02;
+	}
+	if (gMcpAltHoldState) {
+		leds2 |= 0x10;
+	}
+	if (gMcpVsState) {
+		leds2 |= 0x20;
+	}
+	if (gMcpAprState) {
+		leds2 |= 0x08;
+	}
+	if (gMcpRevState) {
+		leds2 |= 0x08;
+	}
+	if (gMcpAutoThrottleState) {
+		leds4 |= 0x10;
+	}
+
+	mcp_leds[1] = leds1;
+	mcp_leds[2] = leds2;
+	mcp_leds[3] = leds3;
+	mcp_leds[4] = leds4;
+	mcp_panel_write(mcp_leds);
+
 }
 
 unsigned char mcp_get_digit(uint8_t digit) {
@@ -257,7 +402,64 @@ void mcp_update_display() {
 		mcp_course_left[2] = mcp_get_digit(gMcpCRS % 100 / 10);
 		mcp_course_left[3] = mcp_get_digit(gMcpCRS % 10);
 		mcp_panel_write(mcp_course_left);
+		mcp_course_right[1] = mcp_get_digit(gMcpCRS / 100);
+		mcp_course_right[2] = mcp_get_digit(gMcpCRS % 100 / 10);
+		mcp_course_right[3] = mcp_get_digit(gMcpCRS % 10);
+		mcp_panel_write(mcp_course_right);
 	}
+	if (gMcpAlt != round(XPLMGetDataf(gMcpAltHoldFtDataRef))) {
+		gMcpAlt = round(XPLMGetDataf(gMcpAltHoldFtDataRef));
+		mcp_altitude[1] = mcp_get_digit(gMcpAlt / 10000);
+		mcp_altitude[2] = mcp_get_digit(gMcpAlt % 10000 / 1000);
+		mcp_altitude[3] = mcp_get_digit(gMcpAlt % 1000 / 100);
+		mcp_altitude[4] = mcp_get_digit(gMcpAlt % 100 / 10);
+		mcp_altitude[5] = mcp_get_digit(gMcpAlt % 10);
+		mcp_panel_write(mcp_altitude);
+	}
+	if (gMcpHDG != round(XPLMGetDataf(gMcpHdgMagDataRef))) {
+		gMcpHDG = round(XPLMGetDataf(gMcpHdgMagDataRef));
+		mcp_heading[1] = mcp_get_digit(gMcpHDG / 100);
+		mcp_heading[2] = mcp_get_digit(gMcpHDG % 100 / 10);
+		mcp_heading[3] = mcp_get_digit(gMcpHDG % 10);
+		mcp_panel_write(mcp_heading);
+	}
+	if (gMcpVS != round(XPLMGetDataf(gMcpVSDataRef))) {
+		gMcpVS = round(XPLMGetDataf(gMcpVSDataRef));
+		int value = gMcpVS;
+		if (gMcpVS < 0) {
+			gMcpVSSign = 0x40;
+			value = value * -1;
+		} else {
+			gMcpVSSign = 0x00;
+		}
+		mcp_vert_speed[1] = gMcpVSSign;
+		mcp_vert_speed[2] = mcp_get_digit(value % 10000 / 1000);
+		mcp_vert_speed[3] = mcp_get_digit(value % 1000 / 100);
+		mcp_vert_speed[4] = mcp_get_digit(value % 100 / 10);
+		mcp_vert_speed[5] = mcp_get_digit(value % 10);
+		mcp_panel_write(mcp_vert_speed);
+	}
+    if (gMcpIASIsMach) {
+    	if (gMcpIAS != round(XPLMGetDataf(gMcpIASDataRef) * 100)) {
+    		gMcpIAS = round(XPLMGetDataf(gMcpIASDataRef) * 100);
+    		mcp_ias_mach[1] = 0x00;
+    		mcp_ias_mach[2] = 0x00;
+    		mcp_ias_mach[3] = mcp_get_digit(gMcpIAS / 100) | 0x80; // decimal point
+    		mcp_ias_mach[4] = mcp_get_digit(gMcpIAS % 100 / 10);
+    		mcp_ias_mach[5] = mcp_get_digit(gMcpIAS % 10);
+    		mcp_panel_write(mcp_ias_mach);
+    	}
+    } else {
+    	if (gMcpIAS != round(XPLMGetDataf(gMcpIASDataRef))) {
+    		gMcpIAS = round(XPLMGetDataf(gMcpIASDataRef));
+    		mcp_ias_mach[1] = 0x00;
+    		mcp_ias_mach[2] = 0x00;
+    		mcp_ias_mach[3] = mcp_get_digit(gMcpIAS % 1000 / 100);
+    		mcp_ias_mach[4] = mcp_get_digit(gMcpIAS % 100 / 10);
+    		mcp_ias_mach[5] = mcp_get_digit(gMcpIAS % 10);
+    		mcp_panel_write(mcp_ias_mach);
+    	}
+    }
 
 }
 
@@ -267,30 +469,93 @@ int mcp_process(uint32_t msg) {
 	int res = 0;
     uint32_t readPushButtons = msg & MCP_READ_PUSH_BUTTONS_MASK;
     uint32_t readButtons = msg & MCP_READ_BUTTONS_MASK;
+    uint32_t readAP = readButtons & MCP_READ_BTN_DISENGAGE;
+    uint32_t readFDL = readButtons & MCP_READ_BTN_F_D;
+    uint32_t readFDR = readButtons & MCP_READ_BTN_F_D_RIGHT;
+    uint32_t readAT = readButtons & MCP_READ_BTN_A_T_ARM;
+
+    char tmp3[100];
+	sprintf(tmp3, "-> read %#0x, %#0x\n", readPushButtons, readButtons);
+	XPLMDebugString(tmp3);
 
     if (readPushButtons) {
     	if (readPushButtons == MCP_READ_BTN_HEADING) {
+    		XPLMCommandOnce(gMcpApHeadingSyncCmdRef);
+    	} else if (readPushButtons == MCP_READ_BTN_IAS_MACH) {
+    		XPLMCommandOnce(gMcpApAirspeedSyncCmdRef);
+    	} else if (readPushButtons == MCP_READ_BTN_ALTITUDE) {
+    		XPLMCommandOnce(gMcpApAltitudeSyncCmdRef);
+    	} else if (readPushButtons == MCP_READ_BTN_HDG_SEL) {
     		XPLMCommandOnce(gMcpApHeadingCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_LNAV) {
     		XPLMCommandOnce(gMcpApNAVCmdRef);
-    	} else if (readPushButtons == MCP_READ_BTN_IAS_MACH) {
-    		XPLMCommandOnce(gMcpApIASCmdRef);
-    	} else if (readPushButtons == MCP_READ_BTN_ALTITUDE) {
-    		XPLMCommandOnce(gMcpApAltCmdRef);
-    	} else if (readPushButtons == MCP_READ_BTN_V_S) {
-    		XPLMCommandOnce(gMcpApVsCmdRef);
+    	} else if (readPushButtons == MCP_READ_BTN_VNAV) {
+    		XPLMCommandOnce(gMcpApVNAVCmdRef);
+       	} else if (readPushButtons == MCP_READ_BTN_V_S) {
+        	XPLMCommandOnce(gMcpApVsCmdRef);
+       	} else if (readPushButtons == MCP_READ_BTN_C_O) {
+       		if (gMcpIASIsMach) {
+       			XPLMSetDatai(gMcpArspdIsMachDataRef, 0);
+       			XPLMSetDataf(gMcpArspdDataRef, ((float) gMcpIAS) * 6.0);
+       		} else {
+       			XPLMSetDatai(gMcpArspdIsMachDataRef, 1);
+       			XPLMSetDataf(gMcpArspdDataRef, ((float) gMcpIAS) / 600.0);
+       		}
     	} else if (readPushButtons == MCP_READ_BTN_APP) {
     		XPLMCommandOnce(gMcpApAprCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_ALT_HLD) {
-    		XPLMCommandOnce(gMcpApRevBackCourseCmdRef);
+    		// crashes! XPLMCommandOnce(sMCP_AP_ALTITUDE_HOLD_CR);
     	}
     }
 
     if (readButtons) {
-    	if (readButtons == MCP_READ_BTN_F_D) {
-    	    XPLMCommandOnce(gMcpApFlightDirectorDnCmdRef);
-    	} else if (readButtons == MCP_READ_BTN_A_T_ARM) {
-    		//XPLMCommandOnce(gMcpUpCmdRef);
+    	if (gMcpReadButtonAPState != readAP) {
+    		gMcpReadButtonAPState = readAP;
+    		// AP Changed
+    		//XPLMDebugString("AP changed:\n");
+    		if (readAP) {
+        		if (readFDL) {
+        			XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
+        		} else {
+        			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
+        		}
+    		} else {
+    			XPLMSetDatai(gMcpApAutopilotModeDataRef, 2);
+        		if (readAT) {
+        			XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
+        		} else {
+        			XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
+        		}
+    		}
+    	}
+    	if (gMcpReadButtonFDLState != readFDL) {
+    		gMcpReadButtonFDLState = readFDL;
+    		// Left FD Changed
+    		//XPLMDebugString("Left FD changed:\n");
+    		if (readFDL) {
+    			if (readAP == 0) {
+    				XPLMCommandOnce(gMcpApFlightDirectorOnCmdRef);
+    			} else {
+    				XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
+    			}
+    		} else {
+    			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
+    		}
+    	}
+    	if (gMcpReadButtonFDRState != readFDR) {
+    		gMcpReadButtonFDRState = readFDR;
+    		// Right FD Changed
+    		//XPLMDebugString("Right FD changed:\n");
+    	}
+    	if (gMcpReadButtonATState != readAT) {
+    		gMcpReadButtonATState = readAT;
+    		// Autothrottle Changed
+    		//XPLMDebugString("A/T Arm changed:\n");
+    		if (readAT) {
+    			XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
+    		} else {
+    			XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
+    		}
     	}
     }
 
@@ -302,14 +567,14 @@ int mcp_process_knob(uint32_t msg) {
 //	XPLMDebugString(tmp);
 	int res = 0;
     uint32_t readCourseLeft = msg & MCP_READ_KNOB_COURSE_L_MASK;
-    uint32_t readISAMach = msg & MCP_READ_KNOB_HEADING_MASK;
-    uint32_t readHeading = msg & MCP_READ_KNOB_IAS_MACH_MASK;
-    uint32_t readAltitute = msg & MCP_READ_KNOB_VERTSPEED_MASK;
-    uint32_t readVertSpeed = msg & MCP_READ_KNOB_ALTITUE_MASK;
+    uint32_t readIASMach = msg & MCP_READ_KNOB_IAS_MACH_MASK;
+    uint32_t readHeading = msg & MCP_READ_KNOB_HEADING_MASK;
+    uint32_t readAltitute = msg & MCP_READ_KNOB_ALTITUDE_MASK;
+    uint32_t readVertSpeed = msg & MCP_READ_KNOB_VERTSPEED_MASK;
     uint32_t readCourseRight = msg & MCP_READ_KNOB_COURSE_R_MASK;
 
     if (readCourseLeft) {
-    	int c1 = (msg & 0x000000F0) >> 4;
+    	int c1 = msg >> 4;
     	int i;
 //    	sprintf(tmp, "mcp_process_knob: c1: %d\n", c1);
 //    	XPLMDebugString(tmp);
@@ -323,26 +588,115 @@ int mcp_process_knob(uint32_t msg) {
     		}
     	}
     }
+    if (readCourseRight) {
+    	int c1 = msg >> 16;
+    	int i;
+    	if (c1 < 8) {
+    		for (i = 0; i < c1; i++) {
+    			XPLMCommandOnce(gMcpObsHsiUpCmdRef);
+    		}
+    	} else {
+    		for (i = 0; i < (16 - c1); i++) {
+    			XPLMCommandOnce(gMcpObsHsiDnCmdRef);
+    		}
+    	}
+    }
+    if (readIASMach) {
+    	if (gMcpIASIsMach) {
+    		float iasMach = XPLMGetDataf(gMcpIASDataRef);
+        	int c1 = msg >> 12;
+        	int i;
+        	if (c1 < 8) {
+        		for (i = 0; i < c1; i++) {
+        			iasMach += 0.01;
+        		}
+        	} else {
+        		for (i = 0; i < (16 - c1); i++) {
+        			iasMach -= 0.01;
+        		}
+        	}
+    		XPLMSetDataf(gMcpIASDataRef, iasMach);
+    	} else {
+        	int c1 = msg >> 12;
+        	int i;
+        	if (c1 < 8) {
+        		for (i = 0; i < c1; i++) {
+        			XPLMCommandOnce(gMcpIASUpCmdRef);
+        		}
+        	} else {
+        		for (i = 0; i < (16 - c1); i++) {
+        			XPLMCommandOnce(gMcpIASDnCmdRef);
+        		}
+        	}
+    	}
+    }
+    if (readHeading) {
+    	int c1 = msg;
+    	int i;
+    	if (c1 < 8) {
+    		for (i = 0; i < c1; i++) {
+    			XPLMCommandOnce(gMcpHdgUpCmdRef);
+    		}
+    	} else {
+    		for (i = 0; i < (16 - c1); i++) {
+    			XPLMCommandOnce(gMcpHdgDnCmdRef);
+    		}
+    	}
+    }
+    if (readAltitute) {
+    	int c1 = msg >> 20;
+    	int i;
+    	if (c1 < 8) {
+    		for (i = 0; i < c1; i++) {
+    			XPLMCommandOnce(gMcpAltUpCmdRef);
+    		}
+    	} else {
+    		for (i = 0; i < (16 - c1); i++) {
+    			XPLMCommandOnce(gMcpAltDnCmdRef);
+    		}
+    	}
+    }
+    if (readVertSpeed) {
+    	int c1 = msg >> 8;
+    	int i;
+    	if (c1 < 8) {
+    		for (i = 0; i < c1; i++) {
+    			XPLMCommandOnce(gMcpVrtclSpdUpCmdRef);
+    		}
+    	} else {
+    		for (i = 0; i < (16 - c1); i++) {
+    			XPLMCommandOnce(gMcpVrtclSpdDnCmdRef);
+    		}
+    	}
+    }
+
 
 	return res;
 }
 
 
 void mcp_update_datarefs() {
-    gMcpAlt = round(XPLMGetDataf(gMcpAltHoldFtDataRef));
-    gMcpVS = round(XPLMGetDataf(gMcpVrtVelDataRef));
-    gMcpIAS = round(XPLMGetDataf(gMcpArspdDataRef));
-    gMcpHDG = round(XPLMGetDataf(gMcpHdgMagDataRef));
-//    gMcpCRS = round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef));
+    gMcpAutopilotMode = XPLMGetDatai(gMcpApAutopilotModeDataRef);
+    gMcpAutopilotState = XPLMGetDatai(gMcpApAutopilotStateDataRef);
+    gMcpApState = XPLMGetDatai(gMcpApMasterDataRef);
+    gMcpApSourceState = XPLMGetDatai(gMcpApMasterSourceDataRef);
+    gMcpApFlightDirectorState = XPLMGetDatai(gMcpApFlightDirectorDataRef);
+    gMcpHdgState = XPLMGetDatai(gMcpApHdgDataRef);
+    gMcpNavState = XPLMGetDatai(gMcpApNavDataRef);
+    gMcpIasState = XPLMGetDatai(gMcpApIASDataRef);
+    gMcpAltHoldState = XPLMGetDatai(gMcpApAltDataRef);
+    gMcpVsState = XPLMGetDatai(gMcpApVsDataRef);
+    gMcpAprState = XPLMGetDatai(gMcpApAprDataRef);
+    gMcpRevState = XPLMGetDatai(gMcpApRevDataRef);
+    gMcpVNavState = XPLMGetDatai(gMcpApVNavDataRef);
+    gMcpVNavArmed = XPLMGetDatai(gMcpApVNavArmedDataRef);
+    gMcpGlideSlopeState = XPLMGetDatai(gMcpApGlideSlopeDataRef);
+    gMcpAutoThrottleState = XPLMGetDatai(gMcpApAutoThrottleDataRef);
+    gMcpIASIsMach = XPLMGetDatai(gMcpArspdIsMachDataRef);
+    gMcpTogaState = XPLMGetDatai(gMcpApTogaDataRef);
+    gMcpTogaLateralState = XPLMGetDatai(gMcpApTogaLateralDataRef);
+    gMcpPitchState = XPLMGetDatai(gMcpApPitchDataRef);
 
-    gMcpApButton = XPLMGetDatai(gMcpApMasterDataRef);
-    gMcpHdgButton = XPLMGetDatai(gMcpApHdgDataRef);
-    gMcpNavButton = XPLMGetDatai(gMcpApNavDataRef);
-    gMcpIasButton = XPLMGetDatai(gMcpApIASDataRef);
-    gMcpAltButton = XPLMGetDatai(gMcpApAltDataRef);
-    gMcpVsButton = XPLMGetDatai(gMcpApVsDataRef);
-    gMcpAprButton = XPLMGetDatai(gMcpApAprDataRef);
-    gMcpRevButton = XPLMGetDatai(gMcpApRevDataRef);
 }
 
 void mcp_init() {
@@ -352,8 +706,8 @@ void mcp_init() {
     gMcpAltUpCmdRef          = XPLMFindCommand(sMCP_ALTITUDE_UP_CR);
     gMcpVrtclSpdDnCmdRef     = XPLMFindCommand(sMCP_VERTICAL_SPEED_DOWN_CR);
     gMcpVrtclSpdUpCmdRef     = XPLMFindCommand(sMCP_VERTICAL_SPEED_UP_CR);
-    gMcpAsDnCmdRef           = XPLMFindCommand(sMCP_AIRSPEED_DOWN_CR);
-    gMcpAsUpCmdRef           = XPLMFindCommand(sMCP_AIRSPEED_UP_CR);
+    gMcpIASDnCmdRef           = XPLMFindCommand(sMCP_AIRSPEED_DOWN_CR);
+    gMcpIASUpCmdRef           = XPLMFindCommand(sMCP_AIRSPEED_UP_CR);
     gMcpHdgDnCmdRef          = XPLMFindCommand(sMCP_HEADING_DOWN_CR);
     gMcpHdgUpCmdRef          = XPLMFindCommand(sMCP_HEADING_UP_CR);
     gMcpObsHsiDnCmdRef       = XPLMFindCommand(sMCP_OBS_HSI_DOWN_CR);
@@ -363,8 +717,8 @@ void mcp_init() {
     XPLMRegisterCommandHandler(gMcpAltUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_ALT_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpVrtclSpdDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_VS_UP_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpVrtclSpdUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_VS_DN_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpAsDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_IAS_UP_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpAsUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_IAS_DN_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpIASDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_IAS_UP_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpIASUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_IAS_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpHdgDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_HDG_UP_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpHdgUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_HDG_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpObsHsiDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_CRS_UP_CMD_MSG);
@@ -373,6 +727,9 @@ void mcp_init() {
     gMcpApFlightDirectorUpCmdRef  = XPLMFindCommand(sMCP_FDIR_SERVOS_UP_ONE_CR);
     gMcpApFlightDirectorDnCmdRef  = XPLMFindCommand(sMCP_FDIR_SERVOS_DOWN_ONE_CR);
     gMcpApFlightDirectorOffCmdRef = XPLMFindCommand(sMCP_SERVOS_AND_FLIGHT_DIR_OFF_CR);
+    gMcpApFlightDirectorOnCmdRef  = XPLMFindCommand(sMCP_SERVOS_AND_FLIGHT_DIR_ON_CR);
+    gMcpApAutoThrottleOnCmdRef    = XPLMFindCommand(sMCP_AP_AUTOTHROTTLE_ON_CR);
+    gMcpApAutoThrottleOffCmdRef   = XPLMFindCommand(sMCP_AP_AUTOTHROTTLE_OFF_CR);
     gMcpApHeadingCmdRef           = XPLMFindCommand(sMCP_AP_HEADING_CR);
     gMcpApNAVCmdRef               = XPLMFindCommand(sMCP_AP_NAV_CR);
     gMcpApIASCmdRef               = XPLMFindCommand(sMCP_AP_LEVEL_CHANGE_CR);
@@ -380,10 +737,16 @@ void mcp_init() {
     gMcpApVsCmdRef                = XPLMFindCommand(sMCP_AP_VERTICAL_SPEED_CR);
     gMcpApAprCmdRef               = XPLMFindCommand(sMCP_AP_APPROACH_CR);
     gMcpApRevBackCourseCmdRef     = XPLMFindCommand(sMCP_AP_BACK_COURSE_CR);
+    gMcpApAirspeedSyncCmdRef      = XPLMFindCommand(sMCP_AP_AIRSPEED_SYNC_CR);
+    gMcpApHeadingSyncCmdRef       = XPLMFindCommand(sMCP_AP_HEADING_SYNC_CR);
+    gMcpApAltitudeSyncCmdRef      = XPLMFindCommand(sMCP_AP_ALTITUDE_SYNC_CR);
 
     XPLMRegisterCommandHandler(gMcpApFlightDirectorUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_FD_UP_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApFlightDirectorDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_FD_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApFlightDirectorOffCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_FD_OFF_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApFlightDirectorOnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_FD_ON_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApAutoThrottleOnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_AUTOTHROTTLE_ON_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApAutoThrottleOffCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_AUTOTHROTTLE_OFF_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApHeadingCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_HEADING_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApNAVCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_NAV_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApIASCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_IAS_CMD_MSG);
@@ -391,6 +754,9 @@ void mcp_init() {
     XPLMRegisterCommandHandler(gMcpApVsCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_VS_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApAprCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_APR_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApRevBackCourseCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_REV_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApAirspeedSyncCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_AIRSPEED_SYNC_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApHeadingSyncCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_HEADING_SYNC_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApAltitudeSyncCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_ALTITUDE_SYNC_CMD_MSG);
 
     gMcpPitchTrimDnCmdRef         = XPLMFindCommand(sMCP_PITCH_TRIM_DOWN_CR);
     gMcpPitchTrimUpCmdRef         = XPLMFindCommand(sMCP_PITCH_TRIM_UP_CR);
@@ -406,45 +772,74 @@ void mcp_init() {
 
     gMcpAltHoldFtDataRef         = XPLMFindDataRef(sMCP_ALTITUDE_DIAL_FT_DR);
     gMcpVrtVelDataRef            = XPLMFindDataRef(sMCP_VVI_DIAL_FPM_DR);
+    gMcpVSDataRef                = XPLMFindDataRef(sMCP_VVI_DIAL_FPM_DR);
     gMcpArspdDataRef             = XPLMFindDataRef(sMCP_AIRSPEED_DR);
-    gMcpHdgMagDataRef            = XPLMFindDataRef(sMCP_HEADING_DIAL_DEG_MAG_PILOT_DR);
+    gMcpIASDataRef               = XPLMFindDataRef(sMCP_AIRSPEED_DR);
+    gMcpHdgMagDataRef            = XPLMFindDataRef(sMCP_HSI_BEARING_DEG_MAG_PILOT_DR);
     gMcpHsiObsDegMagPltDataRef   = XPLMFindDataRef(sMCP_HSI_OBS_DEG_MAG_PILOT_DR);
     gMcpHsiSrcSelPltDataRef      = XPLMFindDataRef(sMCP_HSI_SOURCE_SELECT_PILOT_DR);
     gMcpNav1CrsDefMagPltDataRef  = XPLMFindDataRef(sMCP_NAV1_COURSE_DEG_MAG_PILOT_DR);
     gMcpNav2CrsDefMagPltDataRef  = XPLMFindDataRef(sMCP_NAV2_COURSE_DEG_MAG_PILOT_DR);
     gMcpGpsCourseDataRef         = XPLMFindDataRef(sMCP_GPS_COURSE_DR);
+    gMcpArspdIsMachDataRef       = XPLMFindDataRef(sMCP_AP_AIRSPEED_IS_MACH_DR);
 
     gMcpAlt = round(XPLMGetDataf(gMcpAltHoldFtDataRef));
-    gMcpVS = round(XPLMGetDataf(gMcpVrtVelDataRef));
-    gMcpIAS = round(XPLMGetDataf(gMcpArspdDataRef));
+    gMcpVS = round(XPLMGetDataf(gMcpVSDataRef));
+    gMcpIASIsMach = XPLMGetDatai(gMcpArspdIsMachDataRef);
+    if (gMcpIASIsMach) {
+        gMcpIAS = round(XPLMGetDataf(gMcpIASDataRef) * 100);
+    } else {
+        gMcpIAS = round(XPLMGetDataf(gMcpIASDataRef));
+    }
     gMcpHDG = round(XPLMGetDataf(gMcpHdgMagDataRef));
-//    gMcpCRS = round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef));
+    gMcpCRS = round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef));
 
-    gMcpApMasterDataRef = XPLMFindDataRef(sMCP_AP_FLIGHT_DIR_MODE_DR);
+
+    gMcpApAutopilotModeDataRef = XPLMFindDataRef(sMCP_AUTOPILOT_MODE_DR);
+    gMcpApAutopilotStateDataRef = XPLMFindDataRef(sMCP_AUTOPILOT_STATE_DR);
+    gMcpApMasterDataRef = XPLMFindDataRef(sMCP_AP_AUTOPILOT_ON_DR);
+    gMcpApMasterSourceDataRef = XPLMFindDataRef(sMCP_AP_AUTOPILOT_SOURCE_DR);
+    gMcpApFlightDirectorDataRef = XPLMFindDataRef(sMCP_AP_FLIGHT_DIRECTOR_MODE_DR);
     gMcpApHdgDataRef = XPLMFindDataRef(sMCP_AP_HEADING_STATUS_DR);
-    gMcpApNavDataRef = XPLMFindDataRef(sMCP_AP_SPEED_STATUS_DR);
-    gMcpApIASDataRef = XPLMFindDataRef(sMCP_AP_HEADING_STATUS_DR);
+    gMcpApNavDataRef = XPLMFindDataRef(sMCP_AP_HNAV_ARMED_DR);
+    gMcpApIASDataRef = XPLMFindDataRef(sMCP_AP_SPEED_STATUS_DR);
     gMcpApAltDataRef = XPLMFindDataRef(sMCP_AP_ALTITUDE_HOLD_STATUS_DR);
     gMcpApVsDataRef = XPLMFindDataRef(sMCP_AP_VVI_STATUS_DR);
     gMcpApAprDataRef = XPLMFindDataRef(sMCP_AP_APPROACH_STATUS_DR);
     gMcpApRevDataRef = XPLMFindDataRef(sMCP_AP_BACKCOURSE_STATUS_DR);
+    gMcpApVNavDataRef = XPLMFindDataRef(sMCP_AP_VNAV_STATUS_DR);
+    gMcpApVNavArmedDataRef = XPLMFindDataRef(sMCP_AP_VNAV_ARMED_DR);
+    gMcpApGlideSlopeDataRef = XPLMFindDataRef(sMCP_AP_GLIDE_SLOPE_STATUS_DR);
+    gMcpApAutoThrottleDataRef = XPLMFindDataRef(sMCP_AP_AUTOTHROTTLE_ON_DR);
+    gMcpApTogaDataRef = XPLMFindDataRef(sMCP_AP_TOGA_STATUS_DR);
+    gMcpApTogaLateralDataRef = XPLMFindDataRef(sMCP_AP_TOGA_LATERAL_STATUS_DR);
+    gMcpApPitchDataRef = XPLMFindDataRef(sMCP_AP_PITCH_STATUS_DR);
 
-    gMcpApButton = XPLMGetDatai(gMcpApMasterDataRef);
-    gMcpHdgButton = XPLMGetDatai(gMcpApHdgDataRef);
-    gMcpNavButton = XPLMGetDatai(gMcpApNavDataRef);
-    gMcpIasButton = XPLMGetDatai(gMcpApIASDataRef);
-    gMcpAltButton = XPLMGetDatai(gMcpApAltDataRef);
-    gMcpVsButton = XPLMGetDatai(gMcpApVsDataRef);
-    gMcpAprButton = XPLMGetDatai(gMcpApAprDataRef);
-    gMcpRevButton = XPLMGetDatai(gMcpApRevDataRef);
+    gMcpAutopilotMode = XPLMGetDatai(gMcpApAutopilotModeDataRef);
+    gMcpAutopilotState = XPLMGetDatai(gMcpApAutopilotStateDataRef);
+    gMcpApState = XPLMGetDatai(gMcpApMasterDataRef);
+    gMcpApSourceState = XPLMGetDatai(gMcpApMasterSourceDataRef);
+    gMcpApFlightDirectorState = XPLMGetDatai(gMcpApFlightDirectorDataRef);
+    gMcpHdgState = XPLMGetDatai(gMcpApHdgDataRef);
+    gMcpNavState = XPLMGetDatai(gMcpApNavDataRef);
+    gMcpVNavState = XPLMGetDatai(gMcpApVNavDataRef);
+    gMcpVNavArmed = XPLMGetDatai(gMcpApVNavArmedDataRef);
+    gMcpGlideSlopeState = XPLMGetDatai(gMcpApGlideSlopeDataRef);
+    gMcpIasState = XPLMGetDatai(gMcpApIASDataRef);
+    gMcpAltHoldState = XPLMGetDatai(gMcpApAltDataRef);
+    gMcpVsState = XPLMGetDatai(gMcpApVsDataRef);
+    gMcpAprState = XPLMGetDatai(gMcpApAprDataRef);
+    gMcpRevState = XPLMGetDatai(gMcpApRevDataRef);
+    gMcpAutoThrottleState = XPLMGetDatai(gMcpApAutoThrottleDataRef);
+    gMcpTogaState = XPLMGetDatai(gMcpApTogaDataRef);
+    gMcpTogaLateralState = XPLMGetDatai(gMcpApTogaLateralDataRef);
+    gMcpPitchState = XPLMGetDatai(gMcpApPitchDataRef);
+
 }
 
 void *mcpRun(void *ptr_thread_data) {
 	int counter = 0;
 	int counter2 = 0;
-	uint32_t tmp1 = 0;
-	uint32_t tmp2 = 0;
-	uint32_t buttons = 0;
 	int inReportBytesCount = 0;
 
 	mcp_init();
@@ -479,17 +874,20 @@ void *mcpRun(void *ptr_thread_data) {
 //			    sprintf(tmp, "-> CP: mcp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
 //				XPLMDebugString(tmp);
 					counter2++;
-					uint32_t msg = 0;
-					msg += buf[4] << 24;
-					msg += buf[3] << 16;
-					msg += buf[2] << 8;
-					msg += buf[1];
-					mcp_process_knob(msg);
-					msg += buf[7] << 24;
-					msg += buf[6] << 16;
-					msg += buf[5] << 8;
-					msg += buf[4];
-					mcp_process(msg);
+					uint32_t msg1 = 0;
+					uint32_t msg2 = 0;
+					msg1 += buf[7] << 16;
+					msg1 += buf[6] << 8;
+					msg1 += buf[5];
+					mcp_process(msg1);
+					msg2 += buf[3] << 16;
+					msg2 += buf[2] << 8;
+					msg2 += buf[1];
+					mcp_process_knob(msg2);
+
+						char Buffer[256];
+						sprintf(Buffer,"-> %#0x, %#0x\n",msg1, msg2);
+						XPLMDebugString(Buffer);
 				}
 			}
 		}
@@ -508,46 +906,23 @@ void *mcpRun(void *ptr_thread_data) {
 					sprintf(tmp, "-> CP: mcp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
 				} else {
-					uint32_t msg = 0;
-					msg += buf[4] << 24;
-					msg += buf[3] << 16;
-					msg += buf[2] << 8;
-					msg += buf[1];
-					mcp_process(msg);
-					msg += buf[7] << 24;
-					msg += buf[6] << 16;
-					msg += buf[5] << 8;
-					msg += buf[4];
-					mcp_process_knob(msg);
+					uint32_t msg1 = 0;
+					uint32_t msg2 = 0;
+					msg1 += buf[7] << 16;
+					msg1 += buf[6] << 8;
+					msg1 += buf[5];
+					mcp_process(msg1);
+					msg2 += buf[3] << 16;
+					msg2 += buf[2] << 8;
+					msg2 += buf[1];
+					mcp_process_knob(msg2);
+
+					char Buffer[256];
+					sprintf(Buffer,"-> %#0x, %#0x\n",msg1, msg2);
+					XPLMDebugString(Buffer);
 				}
 			}
-			uint32_t pos_negativ = MCP_LED_PLUS_SIGN;
-			buttons = 0x00;
-			if (gMcpApButton) {
-				buttons |= 0x01;
-			}
-			if (gMcpHdgButton) {
-				buttons |= 0x02;
-			}
-			if (gMcpNavButton) {
-				buttons |= 0x04;
-			}
-			if (gMcpIasButton) {
-				buttons |= 0x08;
-			}
-			if (gMcpAltButton) {
-				buttons |= 0x10;
-			}
-			if (gMcpVsButton) {
-				buttons |= 0x20;
-			}
-			if (gMcpAprButton) {
-				buttons |= 0x40;
-			}
-			if (gMcpRevButton) {
-				buttons |= 0x80;
-			}
-			mcp_led_update(tmp1, tmp2, pos_negativ, buttons, writeBuf);
+			mcp_update_leds();
 			//mcp_panel_write(writeBuf);
 			mcp_update_display();
 		}

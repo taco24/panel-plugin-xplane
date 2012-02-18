@@ -1,6 +1,7 @@
 #include "properties.h"
 
 char fline[MAXDATASIZE];	
+static char *trim( char *s);
 
 int propertyCount =0;
 PROPERTY *node= NULL;

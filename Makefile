@@ -12,7 +12,7 @@ HOSTOS=$(shell uname | tr A-Z a-z)
 ifeq ($(HOSTOS),linux)
  LNFLAGS=-march=i386 -m32 -shared -rdynamic -nodefaultlibs -L.
  CFLAGS=$(COMPILERFLAGS) -march=i386 -m32 -DAPL=0 -DIBM=0 -DLIN=1 -DXPLM200=1
- LIBRARIES+=-lpthread -lrt -lusb-1.0
+ LIBRARIES+=-lpthread -lrt -lusb-1.0 -lm 
  HIDFILE=linux/hid.c
  INCLUDE+=-I./linux/include
  INCLUDES+=-I`pkg-config libusb-1.0 --cflags`
@@ -21,7 +21,7 @@ else
   LNFLAGS=-m32 -Wl,-O1 -shared -L.
   CFLAGS=$(COMPILERFLAGS) -DAPL=0 -DIBM=1 -DLIN=0 -DXPLM200=1
   LIBPATH+=-L".\SDK\Libraries\Win" -L".\lib"
-  LIBRARIES+=-lsetupapi -lXPLM -lpthreadGC1
+  LIBRARIES+=-lsetupapi -lXPLM -lpthreadGC1 -lm
   INCLUDE+=-I./include
   HIDFILE=windows/hid.c
 endif

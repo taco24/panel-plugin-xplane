@@ -31,6 +31,5 @@ void addProperty (char *property, char *value);
 void getProperty (char *property, char *value);
 int getPropertyCount();
 int searchString (const char *search, const char *string, int offset);
-static char *trim( char *s);
 
 #endif
