@@ -92,7 +92,7 @@ XPLMCommandRef gMcpApAutopilotOffCmdRef = NULL;
 XPLMCommandRef gMcpApHeadingCmdRef = NULL;
 XPLMCommandRef gMcpApNAVCmdRef = NULL;
 XPLMCommandRef gMcpApVNAVCmdRef = NULL;
-XPLMCommandRef gMcpApIASCmdRef = NULL;
+XPLMCommandRef gMcpApIASLvlChgCmdRef = NULL;
 XPLMCommandRef gMcpApAltCmdRef = NULL;
 XPLMCommandRef gMcpApVsCmdRef = NULL;
 XPLMCommandRef gMcpApAprCmdRef = NULL;
@@ -336,6 +336,7 @@ inline void mcp_update_leds() {
 	if (gMcpNavState) {
 		// HNAV armed: VOR LOCalizer
 		leds4 |= 0x80;
+		leds4 |= 0x02;
 	}
 	if (gMcpIasState == 1) {
 		// Speed Hold
@@ -488,10 +489,10 @@ int mcp_process(uint32_t msg) {
     	} else if (readPushButtons == MCP_READ_BTN_HDG_SEL) {
     		XPLMCommandOnce(gMcpApHeadingCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_LNAV) {
-    		XPLMCommandOnce(gMcpApNAVCmdRef);
+    		XPLMCommandKeyStroke(xplm_key_otto_hnav);
     	} else if (readPushButtons == MCP_READ_BTN_VNAV) {
-    		XPLMCommandOnce(gMcpApVNAVCmdRef);
-       	} else if (readPushButtons == MCP_READ_BTN_V_S) {
+    		XPLMCommandKeyStroke(xplm_key_otto_vnav);
+        } else if (readPushButtons == MCP_READ_BTN_V_S) {
         	XPLMCommandOnce(gMcpApVsCmdRef);
        	} else if (readPushButtons == MCP_READ_BTN_C_O) {
        		if (gMcpIASIsMach) {
@@ -503,8 +504,12 @@ int mcp_process(uint32_t msg) {
        		}
     	} else if (readPushButtons == MCP_READ_BTN_APP) {
     		XPLMCommandOnce(gMcpApAprCmdRef);
+    	} else if (readPushButtons == MCP_READ_BTN_VOR_LOC) {
+    		XPLMCommandOnce(gMcpApNAVCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_ALT_HLD) {
     		// crashes! XPLMCommandOnce(sMCP_AP_ALTITUDE_HOLD_CR);
+    	} else if (readPushButtons == MCP_READ_BTN_LVL_CHANGE) {
+    		XPLMCommandOnce(gMcpApIASLvlChgCmdRef);
     	}
     }
 
@@ -732,7 +737,8 @@ void mcp_init() {
     gMcpApAutoThrottleOffCmdRef   = XPLMFindCommand(sMCP_AP_AUTOTHROTTLE_OFF_CR);
     gMcpApHeadingCmdRef           = XPLMFindCommand(sMCP_AP_HEADING_CR);
     gMcpApNAVCmdRef               = XPLMFindCommand(sMCP_AP_NAV_CR);
-    gMcpApIASCmdRef               = XPLMFindCommand(sMCP_AP_LEVEL_CHANGE_CR);
+    gMcpApVNAVCmdRef              = XPLMFindCommand(sMCP_AP_VNAV_CR);
+    gMcpApIASLvlChgCmdRef         = XPLMFindCommand(sMCP_AP_LEVEL_CHANGE_CR);
     gMcpApAltCmdRef               = XPLMFindCommand(sMCP_AP_ALTITUDE_HOLD_CR);
     gMcpApVsCmdRef                = XPLMFindCommand(sMCP_AP_VERTICAL_SPEED_CR);
     gMcpApAprCmdRef               = XPLMFindCommand(sMCP_AP_APPROACH_CR);
@@ -749,7 +755,8 @@ void mcp_init() {
     XPLMRegisterCommandHandler(gMcpApAutoThrottleOffCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_AUTOTHROTTLE_OFF_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApHeadingCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_HEADING_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApNAVCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_NAV_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpApIASCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_IAS_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApVNAVCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_VNAV_CMD_MSG);
+    XPLMRegisterCommandHandler(gMcpApIASLvlChgCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_IAS_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApAltCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_ALT_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApVsCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_VS_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApAprCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_APR_CMD_MSG);
