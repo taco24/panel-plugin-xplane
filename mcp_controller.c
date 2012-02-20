@@ -500,9 +500,9 @@ int mcp_process(uint32_t msg) {
     uint32_t readFDR = readButtons & MCP_READ_BTN_F_D_RIGHT;
     uint32_t readAT = readButtons & MCP_READ_BTN_A_T_ARM;
 
-    char tmp3[100];
-	sprintf(tmp3, "-> read %#0x, %#0x\n", readPushButtons, readButtons);
-	XPLMDebugString(tmp3);
+//    char tmp3[100];
+//	sprintf(tmp3, "-> read %#0x, %#0x\n", readPushButtons, readButtons);
+//	XPLMDebugString(tmp3);
 
     if (readPushButtons) {
     	if (readPushButtons == MCP_READ_BTN_HEADING) {
@@ -910,9 +910,9 @@ void *mcpRun(void *ptr_thread_data) {
 					msg2 += buf[1];
 					mcp_process_knob(msg2);
 
-						char Buffer[256];
-						sprintf(Buffer,"-> %#0x, %#0x\n",msg1, msg2);
-						XPLMDebugString(Buffer);
+//						char Buffer[256];
+//						sprintf(Buffer,"-> %#0x, %#0x\n",msg1, msg2);
+//						XPLMDebugString(Buffer);
 				}
 			}
 		}
@@ -942,9 +942,9 @@ void *mcpRun(void *ptr_thread_data) {
 					msg2 += buf[1];
 					mcp_process_knob(msg2);
 
-					char Buffer[256];
-					sprintf(Buffer,"-> %#0x, %#0x\n",msg1, msg2);
-					XPLMDebugString(Buffer);
+//					char Buffer[256];
+//					sprintf(Buffer,"-> %#0x, %#0x\n",msg1, msg2);
+//					XPLMDebugString(Buffer);
 				}
 			}
 			mcp_update_leds();
