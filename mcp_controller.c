@@ -180,6 +180,7 @@ static unsigned char leds1Prev = 0x00;
 static unsigned char leds2Prev = 0x00;
 static unsigned char leds3Prev = 0x00;
 static unsigned char leds4Prev = 0x00;
+static uint32_t toggleCRS = 0;
 
 
 
@@ -419,14 +420,18 @@ void mcp_update_display() {
 	// course
 	if (gMcpCRS != round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef))) {
 		gMcpCRS = round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef));
+		toggleCRS++;
 		mcp_course_left[1] = mcp_get_digit(gMcpCRS / 100);
 		mcp_course_left[2] = mcp_get_digit(gMcpCRS % 100 / 10);
 		mcp_course_left[3] = mcp_get_digit(gMcpCRS % 10);
 		mcp_panel_write(mcp_course_left);
+	} else if (toggleCRS) {
+		gMcpCRS = round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef));
 		mcp_course_right[1] = mcp_get_digit(gMcpCRS / 100);
 		mcp_course_right[2] = mcp_get_digit(gMcpCRS % 100 / 10);
 		mcp_course_right[3] = mcp_get_digit(gMcpCRS % 10);
 		mcp_panel_write(mcp_course_right);
+		toggleCRS = 0;
 	}
 	if (gMcpAlt != round(XPLMGetDataf(gMcpAltHoldFtDataRef))) {
 		gMcpAlt = round(XPLMGetDataf(gMcpAltHoldFtDataRef));
@@ -532,8 +537,8 @@ int mcp_process(uint32_t msg) {
     		XPLMCommandOnce(gMcpApIASLvlChgCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_ACMD || readPushButtons == MCP_READ_BTN_BCMD) {
     		if (gMcpAutopilotMode == 2) {
-    			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
-    			//XPLMCommandOnce(gMcpApAltCmdRef);
+    			//XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
+    			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
     		} else {
     			XPLMCommandOnce(gMcpApFlightDirectorOnCmdRef);
     		}
@@ -545,8 +550,7 @@ int mcp_process(uint32_t msg) {
 		// DISENGAGE
 		if (readAP) {
 			// disengage AP
-			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
-			//XPLMCommandOnce(gMcpApAltCmdRef);
+			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
 		}
 	}
 	if (gMcpReadButtonFDLState != readFDL) {
@@ -555,8 +559,7 @@ int mcp_process(uint32_t msg) {
 		if (readFDL) {
 			XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
 		} else {
-			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
-			//XPLMCommandOnce(gMcpApAltCmdRef);
+			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
 		}
 	}
 	if (gMcpReadButtonFDRState != readFDR) {
@@ -565,8 +568,7 @@ int mcp_process(uint32_t msg) {
 		if (readFDR) {
 			XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
 		} else {
-			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
-			//XPLMCommandOnce(gMcpApAltCmdRef);
+			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
 		}
 	}
 	if (gMcpReadButtonATState != readAT) {
