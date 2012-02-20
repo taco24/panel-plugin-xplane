@@ -512,8 +512,8 @@ void rp_process_switch(uint32_t knobSelection) {
 }
 
 int rp_process(uint32_t msg) {
-    sprintf(tmp, "-> CP: rp_controller.rp_process: msg: %d\n", msg);
-	XPLMDebugString(tmp);
+    //sprintf(tmp, "-> CP: rp_controller.rp_process: msg: %d\n", msg);
+	//XPLMDebugString(tmp);
 	int res = 0;
     gUpperKnob = msg & RP_READ_UPPER_KNOB_MODE_MASK;
     gLowerKnob = msg & RP_READ_LOWER_KNOB_MODE_MASK;
@@ -831,6 +831,12 @@ void *rpRun(void *ptr_thread_data) {
 	int counter2 = 0;
 	int inReportBytesCount = 0;
 
+#if IBM
+		Sleep(SLEEP_TIME * 2);
+#else
+		usleep(SLEEP_TIME * 2);
+#endif
+
 	rp_init();
 
 	gPtrThreadData = (struct rp_thread_data *) ptr_thread_data;
@@ -903,9 +909,9 @@ void *rpRun(void *ptr_thread_data) {
 
 		// wait 1 milliseconds
 #if IBM
-		Sleep(SLEEP_TIME);
+		Sleep(SLEEP_TIME * 2);
 #else
-		usleep(SLEEP_TIME);
+		usleep(SLEEP_TIME * 2);
 #endif
 	}
 	panel_close();

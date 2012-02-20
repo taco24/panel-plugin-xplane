@@ -867,6 +867,12 @@ void *mcpRun(void *ptr_thread_data) {
 	int counter2 = 0;
 	int inReportBytesCount = 0;
 
+#if IBM
+		Sleep(SLEEP_TIME * 4);
+#else
+		usleep(SLEEP_TIME * 4);
+#endif
+
 	mcp_init();
 
 	gPtrThreadData = (struct mcp_thread_data *) ptr_thread_data;
@@ -962,9 +968,9 @@ void *mcpRun(void *ptr_thread_data) {
 
 		// wait 1 milliseconds
 #if IBM
-		Sleep(SLEEP_TIME);
+		Sleep(SLEEP_TIME * 4);
 #else
-		usleep(SLEEP_TIME);
+		usleep(SLEEP_TIME * 4);
 #endif
 	}
 	mcp_panel_close();

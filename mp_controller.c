@@ -438,6 +438,12 @@ void *mpRun(void *ptr_thread_data) {
 	uint32_t buttons = 0;
 	int inReportBytesCount = 0;
 
+#if IBM
+		Sleep(SLEEP_TIME);
+#else
+		usleep(SLEEP_TIME);
+#endif
+
 	mp_init();
 
 	gPtrThreadData = (struct mp_thread_data *) ptr_thread_data;

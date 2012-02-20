@@ -498,8 +498,8 @@ void sp_process_knob(uint32_t knobSelection) {
 }
 
 int sp_process(uint32_t msg) {
-    sprintf(tmp, "-> CP: sp_controller.sp_process: msg: %d\n", msg);
-	XPLMDebugString(tmp);
+    //sprintf(tmp, "-> CP: sp_controller.sp_process: msg: %d\n", msg);
+	//XPLMDebugString(tmp);
 	int res = 0;
     gEngineKnob = msg & SP_READ_ENGINES_KNOB_MASK;
     uint32_t landingGearUp = msg & SP_READ_GEARLEVER_UP_MASK;
@@ -959,6 +959,12 @@ void sp_init() {
 void *spRun(void *ptr_thread_data) {
 	int inReportBytesCount = 0;
 
+#if IBM
+		Sleep(SLEEP_TIME * 3);
+#else
+		usleep(SLEEP_TIME * 3);
+#endif
+
 	sp_init();
 
 	gPtrThreadData = (struct sp_thread_data *) ptr_thread_data;
@@ -1036,9 +1042,9 @@ void *spRun(void *ptr_thread_data) {
 
 		// wait 1 milliseconds
 #if IBM
-		Sleep(SLEEP_TIME);
+		Sleep(SLEEP_TIME * 3);
 #else
-		usleep(SLEEP_TIME);
+		usleep(SLEEP_TIME * 3);
 #endif
 	}
 	sp_panel_close();
