@@ -176,6 +176,11 @@ static uint32_t gMcpReadButtonAPState = 0;
 static uint32_t gMcpReadButtonFDLState = 0;
 static uint32_t gMcpReadButtonFDRState = 0;
 static uint32_t gMcpReadButtonATState = 0;
+static unsigned char leds1Prev = 0x00;
+static unsigned char leds2Prev = 0x00;
+static unsigned char leds3Prev = 0x00;
+static unsigned char leds4Prev = 0x00;
+
 
 
 int MainControlPanelCommandHandler(XPLMCommandRef    inCommand,
@@ -301,17 +306,16 @@ inline void mcp_update_leds() {
 	// Testing
 	//leds2 = 0x80;
 
-	if (gMcpApState) {
-		if (gMcpApSourceState == 0) {
-			leds4 |= 0x04;
-		} else if (gMcpApSourceState == 1) {
-			leds4 |= 0x08;
-		}
-	}
-	if (gMcpApFlightDirectorState) {
+	if (gMcpAutopilotMode == 2) {
+		// Autopilot
+		leds4 |= 0x04;
+		leds4 |= 0x08;
+		// Flight Director
 		leds3 |= 0x40;
-	}
-	if (gMcpReadButtonFDRState) {
+		leds2 |= 0x80;
+	} else if (gMcpAutopilotMode == 1) {
+		// Flight Director
+		leds3 |= 0x40;
 		leds2 |= 0x80;
 	}
 	if (gMcpHdgState) {
@@ -359,12 +363,28 @@ inline void mcp_update_leds() {
 	if (gMcpAutoThrottleState) {
 		leds4 |= 0x10;
 	}
-
+	if (leds1 == 0x00
+			&& leds2 == 0x00
+			&& leds3 == 0x00
+			&& leds4 == 0x00) {
+		// Prevent all LEDs off
+		leds2 = 0x10;
+		leds2Prev = leds2;
+	}
 	mcp_leds[1] = leds1;
 	mcp_leds[2] = leds2;
 	mcp_leds[3] = leds3;
 	mcp_leds[4] = leds4;
-	mcp_panel_write(mcp_leds);
+	if (!(leds1 == leds1Prev
+			&& leds2 == leds2Prev
+			&& leds3 == leds3Prev
+			&& leds4 == leds4Prev)) {
+		leds1Prev = leds1;
+		leds2Prev = leds2;
+		leds3Prev = leds3;
+		leds4Prev = leds4;
+		mcp_panel_write(mcp_leds);
+	}
 
 }
 
@@ -507,62 +527,58 @@ int mcp_process(uint32_t msg) {
     	} else if (readPushButtons == MCP_READ_BTN_VOR_LOC) {
     		XPLMCommandOnce(gMcpApNAVCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_ALT_HLD) {
-    		// crashes! XPLMCommandOnce(sMCP_AP_ALTITUDE_HOLD_CR);
+    		XPLMCommandOnce(gMcpApAltCmdRef);
     	} else if (readPushButtons == MCP_READ_BTN_LVL_CHANGE) {
     		XPLMCommandOnce(gMcpApIASLvlChgCmdRef);
-    	}
+    	} else if (readPushButtons == MCP_READ_BTN_ACMD || readPushButtons == MCP_READ_BTN_BCMD) {
+    		if (gMcpAutopilotMode == 2) {
+    			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
+    			//XPLMCommandOnce(gMcpApAltCmdRef);
+    		} else {
+    			XPLMCommandOnce(gMcpApFlightDirectorOnCmdRef);
+    		}
+     	}
     }
 
-    if (readButtons) {
-    	if (gMcpReadButtonAPState != readAP) {
-    		gMcpReadButtonAPState = readAP;
-    		// AP Changed
-    		//XPLMDebugString("AP changed:\n");
-    		if (readAP) {
-        		if (readFDL) {
-        			XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
-        		} else {
-        			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
-        		}
-    		} else {
-    			XPLMSetDatai(gMcpApAutopilotModeDataRef, 2);
-        		if (readAT) {
-        			XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
-        		} else {
-        			XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
-        		}
-    		}
-    	}
-    	if (gMcpReadButtonFDLState != readFDL) {
-    		gMcpReadButtonFDLState = readFDL;
-    		// Left FD Changed
-    		//XPLMDebugString("Left FD changed:\n");
-    		if (readFDL) {
-    			if (readAP == 0) {
-    				XPLMCommandOnce(gMcpApFlightDirectorOnCmdRef);
-    			} else {
-    				XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
-    			}
-    		} else {
-    			XPLMCommandOnce(gMcpApFlightDirectorOffCmdRef);
-    		}
-    	}
-    	if (gMcpReadButtonFDRState != readFDR) {
-    		gMcpReadButtonFDRState = readFDR;
-    		// Right FD Changed
-    		//XPLMDebugString("Right FD changed:\n");
-    	}
-    	if (gMcpReadButtonATState != readAT) {
-    		gMcpReadButtonATState = readAT;
-    		// Autothrottle Changed
-    		//XPLMDebugString("A/T Arm changed:\n");
-    		if (readAT) {
-    			XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
-    		} else {
-    			XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
-    		}
-    	}
-    }
+	if (gMcpReadButtonAPState != readAP) {
+		gMcpReadButtonAPState = readAP;
+		// DISENGAGE
+		if (readAP) {
+			// disengage AP
+			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
+			//XPLMCommandOnce(gMcpApAltCmdRef);
+		}
+	}
+	if (gMcpReadButtonFDLState != readFDL) {
+		gMcpReadButtonFDLState = readFDL;
+		// Left FD Changed
+		if (readFDL) {
+			XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
+		} else {
+			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
+			//XPLMCommandOnce(gMcpApAltCmdRef);
+		}
+	}
+	if (gMcpReadButtonFDRState != readFDR) {
+		gMcpReadButtonFDRState = readFDR;
+		// Right FD Changed
+		if (readFDR) {
+			XPLMSetDatai(gMcpApAutopilotModeDataRef, 1);
+		} else {
+			XPLMSetDatai(gMcpApAutopilotModeDataRef, 0);
+			//XPLMCommandOnce(gMcpApAltCmdRef);
+		}
+	}
+	if (gMcpReadButtonATState != readAT) {
+		gMcpReadButtonATState = readAT;
+		// Autothrottle Changed
+		if (readAT) {
+			XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
+		} else {
+			XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
+		}
+	}
+
 
 	return res;
 }
