@@ -285,7 +285,7 @@ LEDs:
 0F 00 00 00 10 -> AutoThrottle/ARM
 0F 00 00 00 20 ->
 0F 00 00 00 40 ->
-0F 00 00 00 80 -> LNAV
+0F 00 00 00 80 -> VOR LOC
 0F 00 FF FF FF -> ALL LEDS
 
 http://www.airliners.net/aviation-forums/tech_ops/read.main/17539/
@@ -305,7 +305,7 @@ inline void mcp_update_leds() {
 	unsigned char leds3 = 0x00;
 	unsigned char leds4 = 0x00;
 	// Testing
-	//leds2 = 0x80;
+	//leds4 = 0x80;
 
 	if (gMcpAutopilotMode == 2) {
 		// Autopilot
@@ -322,10 +322,49 @@ inline void mcp_update_leds() {
 	if (gMcpHdgState) {
 		leds2 |= 0x04;
 	}
-	if ((gMcpAutopilotState) & 0x3000) {
+	if ((gMcpAutopilotState) & 0x4000) {
+		// Altitude Hold Engaged
+		leds2 |= 0x10;
+	}
+	if ((gMcpAutopilotState) & 0x1000) {
 		// VNAV Armed
 		leds4 |= 0x01;
 	}
+	if ((gMcpAutopilotState) & 0x0400) {
+		// 0x0400 Glideslope Armed (APProach)
+		leds2 |= 0x08;
+	}
+	if ((gMcpAutopilotState) & 0x0300) {
+		// 0x0100 HNAV Armed
+		// 0x0200 LOCalizer
+		leds4 |= 0x02;
+		leds4 |= 0x80;
+	}
+	if ((gMcpAutopilotState) & 0x0040) {
+		// 0x0040 Flight Level Change Engage
+		leds2 |= 0x02;
+	}
+	if ((gMcpAutopilotState) & 0x0020) {
+		// 0x0020 Altitude Hold Arm
+		leds2 |= 0x10;
+	}
+	if ((gMcpAutopilotState) & 0x0010) {
+		// 0x0010 VVI Climb Engage
+		leds2 |= 0x20;
+	}
+	if ((gMcpAutopilotState) & 0x0008) {
+		// 0x0008 Airspeed Hold With Pitch Engage
+		leds2 |= 0x01;
+	}
+	if ((gMcpAutopilotState) & 0x0002) {
+		// 0x0002 Heading Hold Engage
+		leds2 |= 0x04;
+	}
+	if ((gMcpAutopilotState) & 0x0001) {
+		// 0x0001 Autothrottle Engage
+		leds4 |= 0x10;
+	}
+
 /*	char Buffer[256];
 	sprintf(Buffer,"%d,%d,%d: %d, %d, %d, -%d, %d, %d, -%d, %d, %d, -%d, %d, %d, -%d, %#0x, %d\n",
 			gMcpApState, gMcpApSourceState, gMcpApFlightDirectorState,
@@ -340,8 +379,8 @@ inline void mcp_update_leds() {
 	}
 	if (gMcpNavState) {
 		// HNAV armed: VOR LOCalizer
-		leds4 |= 0x80;
 		leds4 |= 0x02;
+		leds4 |= 0x80;
 	}
 	if (gMcpIasState == 1) {
 		// Speed Hold
