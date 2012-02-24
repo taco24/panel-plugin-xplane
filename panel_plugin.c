@@ -1,5 +1,7 @@
 #if IBM
 #include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -133,7 +135,7 @@ PLUGIN_API void XPluginDisable(void) {
 #if IBM
 	Sleep(500);
 #else
-	sleep(1);
+	usleep(50);
 #endif
 }
 
