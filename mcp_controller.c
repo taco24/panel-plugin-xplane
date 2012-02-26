@@ -631,9 +631,17 @@ int mcp_process(uint32_t msg) {
 		gMcpReadButtonATState = readAT;
 		// Autothrottle Changed
 		if (readAT) {
-			XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
+			//XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
+			if (!((gMcpAutopilotState) & 0x0001)) {
+				// 0x0001 Autothrottle Engage
+				XPLMCommandKeyStroke(xplm_key_otto_atr);
+			}
 		} else {
-			XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
+			//XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
+			if ((gMcpAutopilotState) & 0x0001) {
+				// 0x0001 Autothrottle Disengage
+				XPLMCommandKeyStroke(xplm_key_otto_atr);
+			}
 		}
 	}
 
