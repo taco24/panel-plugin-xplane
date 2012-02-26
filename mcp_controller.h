@@ -79,6 +79,9 @@ extern void *mcpRun(void *ptr_thread_data);
 #define sMCP_AP_TOGA_LATERAL_STATUS_DR       "sim/cockpit2/autopilot/TOGA_lateral_status"
 #define sMCP_AP_PITCH_STATUS_DR              "sim/cockpit2/autopilot/pitch_status"
 
+#define sMCP_AVIONICS_POWER_ON_DR            "sim/cockpit2/switches/avionics_power_on"
+#define sMCP_BATTERY_ON_DR                   "sim/cockpit/electrical/battery_on"
+#define sMCP_GENERATOR_ARRAY_ON_DR           "sim/cockpit/electrical/generator_on"
 #define sMCP_AP_AUTOPILOT_ON_DR              "sim/cockpit2/autopilot/autopilot_on"
 #define sMCP_AP_AUTOPILOT_SOURCE_DR          "sim/cockpit2/autopilot/autopilot_source"
 #define sMCP_AP_FLIGHT_DIRECTOR_MODE_DR      "sim/cockpit2/autopilot/flight_director_mode"

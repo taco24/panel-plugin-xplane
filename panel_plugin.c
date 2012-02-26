@@ -64,8 +64,8 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 	 * plugin to the plugin-system. */
 
 	strcpy(outName, "X-Plane Panel Controller");
-	strcpy(outSig, "panel.saitek");
-	strcpy(outDesc, "panel 12.02");
+	strcpy(outSig, "panel.controller");
+	strcpy(outDesc, "panel 12.02.26");
 
     XPLMRegisterFlightLoopCallback(PanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
 

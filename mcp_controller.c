@@ -133,8 +133,11 @@ static int gMcpVSSign = 0;
 static int gMcpHDG = 0;
 static int gMcpCRS = 0;
 
-XPLMDataRef gMcpApAutopilotModeDataRef = NULL;
+XPLMDataRef gMcpAvionicsPowerOnDataRef = NULL;
+XPLMDataRef gMcpBatteryOnDataRef = NULL;
+XPLMDataRef gMcpGeneratorArrayOnDataRef = NULL;
 XPLMDataRef gMcpApAutopilotStateDataRef = NULL;
+XPLMDataRef gMcpApAutopilotModeDataRef = NULL;
 XPLMDataRef gMcpApMasterDataRef = NULL;
 XPLMDataRef gMcpApMasterSourceDataRef = NULL;
 XPLMDataRef gMcpApFlightDirectorDataRef = NULL;
@@ -153,6 +156,8 @@ XPLMDataRef gMcpApTogaDataRef = NULL;
 XPLMDataRef gMcpApTogaLateralDataRef = NULL;
 XPLMDataRef gMcpApPitchDataRef = NULL;
 
+static uint32_t gMcpAvionicsPowerOn = 0;
+static uint32_t gMcpBatteryOn = 0;
 static uint32_t gMcpAutopilotMode = 0;
 static uint32_t gMcpApState = 0;
 static uint32_t gMcpApSourceState = 0;
@@ -181,7 +186,7 @@ static unsigned char leds2Prev = 0x00;
 static unsigned char leds3Prev = 0x00;
 static unsigned char leds4Prev = 0x00;
 static uint32_t toggleCRS = 0;
-
+static uint32_t gMcpGeneratorArrayOn[8];
 
 
 int MainControlPanelCommandHandler(XPLMCommandRef    inCommand,
@@ -411,21 +416,33 @@ inline void mcp_update_leds() {
 		leds2 = 0x10;
 		leds2Prev = leds2;
 	}
-	mcp_leds[1] = leds1;
-	mcp_leds[2] = leds2;
-	mcp_leds[3] = leds3;
-	mcp_leds[4] = leds4;
-	if (!(leds1 == leds1Prev
-			&& leds2 == leds2Prev
-			&& leds3 == leds3Prev
-			&& leds4 == leds4Prev)) {
-		leds1Prev = leds1;
-		leds2Prev = leds2;
-		leds3Prev = leds3;
-		leds4Prev = leds4;
+	// Avionics Power on?
+	if (gMcpAvionicsPowerOn && (gMcpBatteryOn || gMcpGeneratorArrayOn[0])) {
+		mcp_leds[1] = leds1;
+		mcp_leds[2] = leds2;
+		mcp_leds[3] = leds3;
+		mcp_leds[4] = leds4;
+		if (!(leds1 == leds1Prev
+				&& leds2 == leds2Prev
+				&& leds3 == leds3Prev
+				&& leds4 == leds4Prev)) {
+			leds1Prev = leds1;
+			leds2Prev = leds2;
+			leds3Prev = leds3;
+			leds4Prev = leds4;
+			mcp_panel_write(mcp_leds);
+		}
+	} else {
+		mcp_leds[1] = 0;
+		mcp_leds[2] = 0;
+		mcp_leds[3] = 0;
+		mcp_leds[4] = 0;
+		leds1Prev = 0;
+		leds2Prev = 0;
+		leds3Prev = 0;
+		leds4Prev = 0;
 		mcp_panel_write(mcp_leds);
 	}
-
 }
 
 unsigned char mcp_get_digit(uint8_t digit) {
@@ -641,11 +658,18 @@ int mcp_process_knob(uint32_t msg) {
 //    	sprintf(tmp, "mcp_process_knob: c1: %d\n", c1);
 //    	XPLMDebugString(tmp);
     	if (c1 < 8) {
+    		if (c1 > 2) {
+    			c1 *= 3;
+    		}
     		for (i = 0; i < c1; i++) {
     			XPLMCommandOnce(gMcpObsHsiUpCmdRef);
     		}
     	} else {
-    		for (i = 0; i < (16 - c1); i++) {
+    		c1 = (17 - c1);
+    		if (c1 > 2) {
+    			c1 *= 3;
+    		}
+    		for (i = 0; i < c1; i++) {
     			XPLMCommandOnce(gMcpObsHsiDnCmdRef);
     		}
     	}
@@ -654,11 +678,18 @@ int mcp_process_knob(uint32_t msg) {
     	int c1 = msg >> 16;
     	int i;
     	if (c1 < 8) {
+    		if (c1 > 2) {
+    			c1 *= 3;
+    		}
     		for (i = 0; i < c1; i++) {
     			XPLMCommandOnce(gMcpObsHsiUpCmdRef);
     		}
     	} else {
-    		for (i = 0; i < (16 - c1); i++) {
+    		c1 = (17 - c1);
+    		if (c1 > 2) {
+    			c1 *= 3;
+    		}
+    		for (i = 0; i < c1; i++) {
     			XPLMCommandOnce(gMcpObsHsiDnCmdRef);
     		}
     	}
@@ -682,11 +713,18 @@ int mcp_process_knob(uint32_t msg) {
         	int c1 = msg >> 12;
         	int i;
         	if (c1 < 8) {
+        		if (c1 > 2) {
+        			c1 *= 3;
+        		}
         		for (i = 0; i < c1; i++) {
         			XPLMCommandOnce(gMcpIASUpCmdRef);
         		}
         	} else {
-        		for (i = 0; i < (16 - c1); i++) {
+        		c1 = (17 - c1);
+        		if (c1 > 2) {
+        			c1 *= 3;
+        		}
+        		for (i = 0; i < c1; i++) {
         			XPLMCommandOnce(gMcpIASDnCmdRef);
         		}
         	}
@@ -696,11 +734,18 @@ int mcp_process_knob(uint32_t msg) {
     	int c1 = msg;
     	int i;
     	if (c1 < 8) {
+    		if (c1 > 2) {
+    			c1 *= 3;
+    		}
     		for (i = 0; i < c1; i++) {
     			XPLMCommandOnce(gMcpHdgUpCmdRef);
     		}
     	} else {
-    		for (i = 0; i < (16 - c1); i++) {
+    		c1 = (17 - c1);
+    		if (c1 > 2) {
+    			c1 *= 3;
+    		}
+    		for (i = 0; i < c1; i++) {
     			XPLMCommandOnce(gMcpHdgDnCmdRef);
     		}
     	}
@@ -738,7 +783,10 @@ int mcp_process_knob(uint32_t msg) {
 
 
 void mcp_update_datarefs() {
-    gMcpAutopilotMode = XPLMGetDatai(gMcpApAutopilotModeDataRef);
+	gMcpAvionicsPowerOn = XPLMGetDatai(gMcpAvionicsPowerOnDataRef);
+	gMcpBatteryOn = XPLMGetDatai(gMcpBatteryOnDataRef);
+	XPLMSetDatavi(gMcpGeneratorArrayOnDataRef, gMcpGeneratorArrayOn, 0, 8);
+	gMcpAutopilotMode = XPLMGetDatai(gMcpApAutopilotModeDataRef);
     gMcpAutopilotState = XPLMGetDatai(gMcpApAutopilotStateDataRef);
     gMcpApState = XPLMGetDatai(gMcpApMasterDataRef);
     gMcpApSourceState = XPLMGetDatai(gMcpApMasterSourceDataRef);
@@ -858,7 +906,9 @@ void mcp_init() {
     gMcpHDG = round(XPLMGetDataf(gMcpHdgMagDataRef));
     gMcpCRS = round(XPLMGetDataf(gMcpHsiObsDegMagPltDataRef));
 
-
+    gMcpAvionicsPowerOnDataRef = XPLMFindDataRef(sMCP_AVIONICS_POWER_ON_DR);
+    gMcpBatteryOnDataRef = XPLMFindDataRef(sMCP_BATTERY_ON_DR);
+    gMcpGeneratorArrayOnDataRef = XPLMFindDataRef(sMCP_GENERATOR_ARRAY_ON_DR);
     gMcpApAutopilotModeDataRef = XPLMFindDataRef(sMCP_AUTOPILOT_MODE_DR);
     gMcpApAutopilotStateDataRef = XPLMFindDataRef(sMCP_AUTOPILOT_STATE_DR);
     gMcpApMasterDataRef = XPLMFindDataRef(sMCP_AP_AUTOPILOT_ON_DR);
@@ -879,6 +929,10 @@ void mcp_init() {
     gMcpApTogaLateralDataRef = XPLMFindDataRef(sMCP_AP_TOGA_LATERAL_STATUS_DR);
     gMcpApPitchDataRef = XPLMFindDataRef(sMCP_AP_PITCH_STATUS_DR);
 
+
+	gMcpAvionicsPowerOn = XPLMGetDatai(gMcpAvionicsPowerOnDataRef);
+	gMcpBatteryOn = XPLMGetDatai(gMcpBatteryOnDataRef);
+	XPLMSetDatavi(gMcpGeneratorArrayOnDataRef, gMcpGeneratorArrayOn, 0, 8);
     gMcpAutopilotMode = XPLMGetDatai(gMcpApAutopilotModeDataRef);
     gMcpAutopilotState = XPLMGetDatai(gMcpApAutopilotStateDataRef);
     gMcpApState = XPLMGetDatai(gMcpApMasterDataRef);

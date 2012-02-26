@@ -942,7 +942,6 @@ void sp_init() {
     gSpNumberOfBatteriesDataRef = XPLMFindDataRef(sSP_NUMBER_OF_BATTERIES_DR);
     gSpNumberOfGeneratorsDataRef = XPLMFindDataRef(sSP_NUMBER_OF_GENERATORS_DR);
     gSpNumberOfEnginesDataRef = XPLMFindDataRef(sSP_NUMBER_OF_ENGINES_DR);
-    gSpBatteryArrayOnDataRef = XPLMFindDataRef(sSP_BATTERY_ARRAY_ON_DR);
     gSpGearRetractDataRef = XPLMFindDataRef(sSP_GEAR_RETRACT_DR);
     gSpOnGroundDataRef = XPLMFindDataRef(sSP_ON_GROUND_DR);
     gSpLandingGearStatusDataRef = XPLMFindDataRef(sSP_LANDING_GEAR_STATUS_DR);
