@@ -75,8 +75,7 @@ XPLMCommandRef gMpHdgUpCmdRef = NULL;
 XPLMCommandRef gMpObsHsiDnCmdRef = NULL;
 XPLMCommandRef gMpObsHsiUpCmdRef = NULL;
 
-XPLMCommandRef gMpApFlightDirectorUpCmdRef = NULL;
-XPLMCommandRef gMpApFlightDirectorDnCmdRef = NULL;
+XPLMCommandRef gMpApFlightDirectorOnCmdRef = NULL;
 XPLMCommandRef gMpApFlightDirectorOffCmdRef = NULL;
 XPLMCommandRef gMpApHeadingCmdRef = NULL;
 XPLMCommandRef gMpApNAVCmdRef = NULL;
@@ -124,6 +123,8 @@ XPLMDataRef gMpApAltDataRef = NULL;
 XPLMDataRef gMpApVsDataRef = NULL;
 XPLMDataRef gMpApAprDataRef = NULL;
 XPLMDataRef gMpApRevDataRef = NULL;
+XPLMDataRef gMpApAutopilotStateDataRef = NULL;
+XPLMDataRef gMpApAutopilotModeDataRef = NULL;
 
 static uint32_t gMpApButton = 0;
 static uint32_t gMpHdgButton = 0;
@@ -133,6 +134,9 @@ static uint32_t gMpAltButton = 0;
 static uint32_t gMpVsButton = 0;
 static uint32_t gMpAprButton = 0;
 static uint32_t gMpRevButton = 0;
+static uint32_t gMpATButtonState = 0;
+static uint32_t gMpAutopilotState = 0;
+static uint32_t gMpAutopilotMode = 0;
 
 static int gIndicatorKnob = MP_KNOB_ALT;
 
@@ -275,7 +279,18 @@ int mp_process(uint32_t msg) {
 
     if (readButtons) {
     	if (readButtons == MP_READ_AP_BTN) {
-    		XPLMCommandOnce(gMpApFlightDirectorDnCmdRef);
+    		if (gMpAutopilotMode == 0) {
+        		XPLMCommandOnce(gMpApFlightDirectorOnCmdRef);
+        		// Check Autothrottle
+        		if (readAutoThrottle == MP_READ_THROTTLE_ON) {
+        			if (!((gMpAutopilotState) & 0x0001)) {
+        				// 0x0001 Autothrottle Arm
+        				XPLMCommandKeyStroke(xplm_key_otto_atr);
+        			}
+        		}
+    		} else {
+        		XPLMCommandOnce(gMpApFlightDirectorOffCmdRef);
+    		}
     	} else if (readButtons == MP_READ_HDG_BTN) {
     		XPLMCommandOnce(gMpApHeadingCmdRef);
     	} else if (readButtons == MP_READ_NAV_BTN) {
@@ -309,13 +324,24 @@ int mp_process(uint32_t msg) {
     	}
     }
 
-    if (readAutoThrottle) {
-    	if (readAutoThrottle == MP_READ_THROTTLE_ON) {
-    		//TODO
-    	} else if (readAutoThrottle == MP_READ_THROTTLE_OFF) {
-    		//TODO
-    	}
+    if (gMpATButtonState != readAutoThrottle) {
+    	gMpATButtonState = readAutoThrottle;
+		// Autothrottle Changed
+		if (readAutoThrottle == MP_READ_THROTTLE_ON) {
+			//XPLMCommandOnce(gMcpApAutoThrottleOnCmdRef);
+			if (!((gMpAutopilotState) & 0x0001)) {
+				// 0x0001 Autothrottle Arm
+				XPLMCommandKeyStroke(xplm_key_otto_atr);
+			}
+		} else {
+			//XPLMCommandOnce(gMcpApAutoThrottleOffCmdRef);
+			if ((gMpAutopilotState) & 0x0001) {
+				// 0x0001 Autothrottle Disarm
+				XPLMCommandKeyStroke(xplm_key_otto_atr);
+			}
+		}
     }
+
 	return res;
 }
 
@@ -334,6 +360,8 @@ void mp_update_datarefs() {
     gMpVsButton = XPLMGetDatai(gMpApVsDataRef);
     gMpAprButton = XPLMGetDatai(gMpApAprDataRef);
     gMpRevButton = XPLMGetDatai(gMpApRevDataRef);
+    gMpAutopilotState = XPLMGetDatai(gMpApAutopilotStateDataRef);
+	gMpAutopilotMode = XPLMGetDatai(gMpApAutopilotModeDataRef);
 }
 
 void mp_init() {
@@ -361,8 +389,7 @@ void mp_init() {
     XPLMRegisterCommandHandler(gMpObsHsiDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_CRS_UP_CMD_MSG);
     XPLMRegisterCommandHandler(gMpObsHsiUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_CRS_DN_CMD_MSG);
 
-    gMpApFlightDirectorUpCmdRef  = XPLMFindCommand(sMP_FDIR_SERVOS_UP_ONE_CR);
-    gMpApFlightDirectorDnCmdRef  = XPLMFindCommand(sMP_FDIR_SERVOS_DOWN_ONE_CR);
+    gMpApFlightDirectorOnCmdRef  = XPLMFindCommand(sMP_SERVOS_AND_FLIGHT_DIR_ON_CR);
     gMpApFlightDirectorOffCmdRef = XPLMFindCommand(sMP_SERVOS_AND_FLIGHT_DIR_OFF_CR);
     gMpApHeadingCmdRef           = XPLMFindCommand(sMP_AP_HEADING_CR);
     gMpApNAVCmdRef               = XPLMFindCommand(sMP_AP_NAV_CR);
@@ -372,8 +399,7 @@ void mp_init() {
     gMpApAprCmdRef               = XPLMFindCommand(sMP_AP_APPROACH_CR);
     gMpApRevBackCourseCmdRef     = XPLMFindCommand(sMP_AP_BACK_COURSE_CR);
 
-    XPLMRegisterCommandHandler(gMpApFlightDirectorUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_AP_FD_UP_CMD_MSG);
-    XPLMRegisterCommandHandler(gMpApFlightDirectorDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_AP_FD_DN_CMD_MSG);
+    XPLMRegisterCommandHandler(gMpApFlightDirectorOnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_AP_FD_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMpApFlightDirectorOffCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_AP_FD_OFF_CMD_MSG);
     XPLMRegisterCommandHandler(gMpApHeadingCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_AP_HEADING_CMD_MSG);
     XPLMRegisterCommandHandler(gMpApNAVCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_AP_NAV_CMD_MSG);
@@ -419,6 +445,8 @@ void mp_init() {
     gMpApVsDataRef = XPLMFindDataRef(sMP_AP_VVI_STATUS_DR);
     gMpApAprDataRef = XPLMFindDataRef(sMP_AP_APPROACH_STATUS_DR);
     gMpApRevDataRef = XPLMFindDataRef(sMP_AP_BACKCOURSE_STATUS_DR);
+    gMpApAutopilotStateDataRef = XPLMFindDataRef(sMP_AUTOPILOT_STATE_DR);
+    gMpApAutopilotModeDataRef = XPLMFindDataRef(sMP_AUTOPILOT_MODE_DR);
 
     gMpApButton = XPLMGetDatai(gMpApMasterDataRef);
     gMpHdgButton = XPLMGetDatai(gMpApHdgDataRef);
@@ -428,6 +456,8 @@ void mp_init() {
     gMpVsButton = XPLMGetDatai(gMpApVsDataRef);
     gMpAprButton = XPLMGetDatai(gMpApAprDataRef);
     gMpRevButton = XPLMGetDatai(gMpApRevDataRef);
+    gMpAutopilotState = XPLMGetDatai(gMpApAutopilotStateDataRef);
+    gMpAutopilotMode = XPLMGetDatai(gMpApAutopilotModeDataRef);
 }
 
 void *mpRun(void *ptr_thread_data) {

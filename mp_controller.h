@@ -25,8 +25,7 @@ extern void *mpRun(void *ptr_thread_data);
 #define sMP_FLAPS_DOWN_CR                   "sim/flight_controls/flaps_down"
 #define sMP_FLAPS_UP_CR                     "sim/flight_controls/flaps_up"
 
-#define sMP_FDIR_SERVOS_UP_ONE_CR           "sim/autopilot/fdir_servos_up_one"
-#define sMP_FDIR_SERVOS_DOWN_ONE_CR         "sim/autopilot/fdir_servos_down_one"
+#define sMP_SERVOS_AND_FLIGHT_DIR_ON_CR     "sim/autopilot/servos_and_flight_dir_on"
 #define sMP_SERVOS_AND_FLIGHT_DIR_OFF_CR    "sim/autopilot/servos_and_flight_dir_off"
 #define sMP_AP_HEADING_CR                   "sim/autopilot/heading"
 #define sMP_AP_NAV_CR                       "sim/autopilot/NAV"
@@ -58,5 +57,7 @@ extern void *mpRun(void *ptr_thread_data);
 #define sMP_AP_VVI_STATUS_DR                "sim/cockpit2/autopilot/vvi_status"
 #define sMP_AP_APPROACH_STATUS_DR           "sim/cockpit2/autopilot/approach_status"
 #define sMP_AP_BACKCOURSE_STATUS_DR         "sim/cockpit2/autopilot/backcourse_status"
+#define sMP_AUTOPILOT_STATE_DR              "sim/cockpit/autopilot/autopilot_state"
+#define sMP_AUTOPILOT_MODE_DR               "sim/cockpit/autopilot/autopilot_mode"
 
 #endif /* MP_CONTROLLER_H_ */
