@@ -31,9 +31,12 @@ enum {
     MP_HDG_DN_CMD_MSG = MP_HDG_UP_CMD_MSG + 1,
     MP_CRS_UP_CMD_MSG,
     MP_CRS_DN_CMD_MSG = MP_CRS_UP_CMD_MSG + 1,
+    MP_PITCH_TRIM_UP_CMD_MSG,
+    MP_PITCH_TRIM_DN_CMD_MSG = MP_PITCH_TRIM_UP_CMD_MSG + 1,
     MP_AP_FD_UP_CMD_MSG,
     MP_AP_FD_DN_CMD_MSG = MP_AP_FD_UP_CMD_MSG + 1,
     MP_AP_FD_OFF_CMD_MSG,
+    MP_PITCH_TRIM_TAKEOFF_CMD_MSG,
     MP_AP_HEADING_CMD_MSG,
     MP_AP_NAV_CMD_MSG,
     MP_AP_IAS_CMD_MSG,
@@ -41,9 +44,6 @@ enum {
     MP_AP_VS_CMD_MSG,
     MP_AP_APR_CMD_MSG,
     MP_AP_REV_CMD_MSG,
-    MP_PITCH_TRIM_DN_CMD_MSG,
-    MP_PITCH_TRIM_UP_CMD_MSG = MP_PITCH_TRIM_DN_CMD_MSG + 1,
-    MP_PITCH_TRIM_TAKEOFF_CMD_MSG,
     MP_FLAPS_DN_CMD_MSG,
     MP_FLAPS_UP_CMD_MSG
 };
@@ -61,6 +61,7 @@ static long last_mainloop_idle = 0;
 static struct mp_thread_data *gPtrThreadData;
 static unsigned char buf[MP_IN_BUF_SIZE];
 static unsigned char writeBuf[MP_OUT_BUF_SIZE];
+static unsigned char writeBufPrev[MP_OUT_BUF_SIZE];
 static char tmp[100];
 
 /* MULTI PANEL Command Refs */
@@ -210,6 +211,15 @@ int MultiPanelCommandHandler(XPLMCommandRef    inCommand,
  return status;
 }
 
+int mp_has_changed(unsigned char a[], unsigned char b[]) {
+	int i = 0;
+	for (i = 0; i < MP_OUT_BUF_SIZE; i++) {
+		if (a[i] != b[i]) {
+			return 1;
+		}
+	}
+	return 0;
+}
 
 inline void mp_led_update(uint32_t x, uint32_t y, uint32_t s, uint32_t buttons, uint8_t m[]) {
     m[0] = 0x00;
@@ -280,7 +290,7 @@ int mp_process(uint32_t msg) {
     if (readButtons) {
     	if (readButtons == MP_READ_AP_BTN) {
     		if (gMpAutopilotMode == 0) {
-        		XPLMCommandOnce(gMpApFlightDirectorOnCmdRef);
+    			XPLMSetDatai(gMpApAutopilotModeDataRef, 1);
         		// Check Autothrottle
         		if (readAutoThrottle == MP_READ_THROTTLE_ON) {
         			if (!((gMpAutopilotState) & 0x0001)) {
@@ -587,7 +597,13 @@ void *mpRun(void *ptr_thread_data) {
 				buttons |= 0x80;
 			}
 			mp_led_update(tmp1, tmp2, pos_negativ, buttons, writeBuf);
-			mp_panel_write(writeBuf);
+			if (mp_has_changed(writeBuf, writeBufPrev)) {
+				int i = 0;
+				for(i = 0; i < MP_OUT_BUF_SIZE; i++) {
+					writeBufPrev[i] = writeBuf[i];
+				}
+				mp_panel_write(writeBuf);
+			}
 		}
 		///////////////////////////////////////////////////////////////////////////
 
@@ -606,6 +622,11 @@ void *mpRun(void *ptr_thread_data) {
 #endif
 	}
 	mp_panel_close();
+#if IBM
+		Sleep(SLEEP_TIME);
+#else
+		usleep(SLEEP_TIME);
+#endif
 	pthread_exit(NULL);
 	return 0;
 }

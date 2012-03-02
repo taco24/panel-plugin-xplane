@@ -40,5 +40,7 @@ extern int panel_write(unsigned char *buf);
 extern int panel_read_non_blocking(unsigned char *buf);
 extern int panel_close();
 
+extern unsigned char rp_blank_panel[RP_OUT_BUF_SIZE];
+
 
 #endif /* RP_DRIVER_H_ */

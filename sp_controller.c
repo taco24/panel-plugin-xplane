@@ -1066,6 +1066,11 @@ void *spRun(void *ptr_thread_data) {
 #endif
 	}
 	sp_panel_close();
+#if IBM
+		Sleep(SLEEP_TIME * 3);
+#else
+		usleep(SLEEP_TIME * 3);
+#endif
 	pthread_exit(NULL);
 	return 0;
 }

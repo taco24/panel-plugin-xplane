@@ -1075,6 +1075,11 @@ void *mcpRun(void *ptr_thread_data) {
 #endif
 	}
 	mcp_panel_close();
+#if IBM
+		Sleep(SLEEP_TIME * 4);
+#else
+		usleep(SLEEP_TIME * 4);
+#endif
 	pthread_exit(NULL);
 	return 0;
 }

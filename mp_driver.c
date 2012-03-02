@@ -23,8 +23,8 @@ enum {
 hid_device *mpHandle;
 static char tmp[100];
 unsigned char mp_in_buf[MP_IN_BUF_SIZE];
-unsigned char mp_blank_panel[13] = {0x00, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A,
-                                        0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x00, 0x00};
+unsigned char mp_blank_panel[13] = {0x00, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,
+		0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x00, 0x00};
 
 const unsigned char mp_zero_panel[13] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -43,13 +43,18 @@ int mp_panel_open() {
     sprintf(tmp, "-> CP: mp_driver.panel_open: Manufacturer String %ls\n", wstr);
 	XPLMDebugString(tmp);
 
+	res = hid_send_feature_report(mpHandle, mp_blank_panel, MP_OUT_BUF_SIZE);
+	if (res < 0) {
+	    sprintf(tmp, "-> CP: mp_driver.panel_open: Error: %ls\n", hid_error(mpHandle));
+		XPLMDebugString(tmp);
+	}
 	hid_set_nonblocking(mpHandle, 1);
 	res = hid_read(mpHandle, mp_in_buf, MP_IN_BUF_SIZE);
 	if (res < 0) {
 	    sprintf(tmp, "-> CP: mp_driver.panel_open: Error: %ls\n", hid_error(mpHandle));
 		XPLMDebugString(tmp);
 	}
-	res = hid_send_feature_report(mpHandle, mp_zero_panel, MP_OUT_BUF_SIZE);
+	res = hid_send_feature_report(mpHandle, mp_blank_panel, MP_OUT_BUF_SIZE);
 	if (res < 0) {
 	    sprintf(tmp, "-> CP: mp_driver.panel_open: Error: %ls\n", hid_error(mpHandle));
 		XPLMDebugString(tmp);

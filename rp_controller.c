@@ -84,6 +84,7 @@ static long last_mainloop_idle = 0;
 static struct rp_thread_data *gPtrThreadData;
 static unsigned char buf[RP_IN_BUF_SIZE];
 static unsigned char writeBuf[RP_OUT_BUF_SIZE];
+static unsigned char writeBufPrev[RP_OUT_BUF_SIZE];
 static char tmp[100];
 static uint32_t gUpperKnob = 0;
 static uint32_t gLowerKnob = 0;
@@ -296,6 +297,15 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
  return status;
 }
 
+int rp_has_changed(unsigned char a[], unsigned char b[]) {
+	int i = 0;
+	for (i = 0; i < RP_OUT_BUF_SIZE; i++) {
+		if (a[i] != b[i]) {
+			return 1;
+		}
+	}
+	return 0;
+}
 
 inline void rp_upper_led_update(uint32_t x, uint32_t y, uint32_t upperDecimal, uint32_t upperPos1, uint32_t upperPos2,
 		uint32_t z, uint32_t r, uint32_t lowerDecimal, uint32_t lowerPos1, uint32_t lowerPos2, uint8_t m[]) {
@@ -896,7 +906,13 @@ void *rpRun(void *ptr_thread_data) {
 				msg += buf[0];
 				rp_process(msg);
 			}
-			panel_write(writeBuf);
+			if (rp_has_changed(writeBuf, writeBufPrev)) {
+				int i = 0;
+				for(i = 0; i < RP_OUT_BUF_SIZE; i++) {
+					writeBufPrev[i] = writeBuf[i];
+				}
+				panel_write(writeBuf);
+			}
 		}
 		///////////////////////////////////////////////////////////////////////////
 
@@ -915,6 +931,11 @@ void *rpRun(void *ptr_thread_data) {
 #endif
 	}
 	panel_close();
+#if IBM
+		Sleep(SLEEP_TIME * 2);
+#else
+		usleep(SLEEP_TIME * 2);
+#endif
 	pthread_exit(NULL);
 	return 0;
 }
