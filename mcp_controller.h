@@ -19,12 +19,6 @@ extern void *mcpRun(void *ptr_thread_data);
 #define sMCP_OBS_HSI_DOWN_CR                 "sim/radios/obs_HSI_down"
 #define sMCP_OBS_HSI_UP_CR                   "sim/radios/obs_HSI_up"
 
-#define sMCP_PITCH_TRIM_DOWN_CR              "sim/flight_controls/pitch_trim_down"
-#define sMCP_PITCH_TRIM_UP_CR                "sim/flight_controls/pitch_trim_up"
-#define sMCP_PITCH_TRIM_TAKEOFF_CR           "sim/flight_controls/pitch_trim_takeoff"
-#define sMCP_FLAPS_DOWN_CR                   "sim/flight_controls/flaps_down"
-#define sMCP_FLAPS_UP_CR                     "sim/flight_controls/flaps_up"
-
 #define sMCP_FDIR_SERVOS_UP_ONE_CR           "sim/autopilot/fdir_servos_up_one"
 #define sMCP_FDIR_SERVOS_DOWN_ONE_CR         "sim/autopilot/fdir_servos_down_one"
 #define sMCP_SERVOS_AND_FLIGHT_DIR_OFF_CR    "sim/autopilot/servos_and_flight_dir_off"

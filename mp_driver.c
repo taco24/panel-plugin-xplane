@@ -48,17 +48,6 @@ int mp_panel_open() {
 	    sprintf(tmp, "-> CP: mp_driver.panel_open: Error: %ls\n", hid_error(mpHandle));
 		XPLMDebugString(tmp);
 	}
-	hid_set_nonblocking(mpHandle, 1);
-	res = hid_read(mpHandle, mp_in_buf, MP_IN_BUF_SIZE);
-	if (res < 0) {
-	    sprintf(tmp, "-> CP: mp_driver.panel_open: Error: %ls\n", hid_error(mpHandle));
-		XPLMDebugString(tmp);
-	}
-	res = hid_send_feature_report(mpHandle, mp_blank_panel, MP_OUT_BUF_SIZE);
-	if (res < 0) {
-	    sprintf(tmp, "-> CP: mp_driver.panel_open: Error: %ls\n", hid_error(mpHandle));
-		XPLMDebugString(tmp);
-	}
 	return 0;
 }
 

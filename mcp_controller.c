@@ -47,12 +47,7 @@ enum {
     MCP_AP_REV_CMD_MSG,
     MCP_AP_AIRSPEED_SYNC_CMD_MSG,
     MCP_AP_HEADING_SYNC_CMD_MSG,
-    MCP_AP_ALTITUDE_SYNC_CMD_MSG,
-    MCP_PITCH_TRIM_DN_CMD_MSG,
-    MCP_PITCH_TRIM_UP_CMD_MSG = MCP_PITCH_TRIM_DN_CMD_MSG + 1,
-    MCP_PITCH_TRIM_TAKEOFF_CMD_MSG,
-    MCP_FLAPS_DN_CMD_MSG,
-    MCP_FLAPS_UP_CMD_MSG
+    MCP_AP_ALTITUDE_SYNC_CMD_MSG
 };
 
 enum {
@@ -101,12 +96,6 @@ XPLMCommandRef gMcpApAirspeedSyncCmdRef = NULL;
 XPLMCommandRef gMcpApHeadingSyncCmdRef = NULL;
 XPLMCommandRef gMcpApAltitudeSyncCmdRef = NULL;
 
-XPLMCommandRef gMcpPitchTrimDnCmdRef = NULL;
-XPLMCommandRef gMcpPitchTrimUpCmdRef = NULL;
-XPLMCommandRef gMcpPitchTrimTakeoffCmdRef = NULL;
-XPLMCommandRef gMcpFlapsDnCmdRef = NULL;
-XPLMCommandRef gMcpFlapsUpCmdRef = NULL;
-
 
 /* MULTI PANEL Data Refs */
 XPLMDataRef gMcpAltHoldFtDataRef = NULL;
@@ -154,7 +143,6 @@ XPLMDataRef gMcpApAutoThrottleDataRef = NULL;
 XPLMDataRef gMcpApGlideSlopeDataRef = NULL;
 XPLMDataRef gMcpApTogaDataRef = NULL;
 XPLMDataRef gMcpApTogaLateralDataRef = NULL;
-XPLMDataRef gMcpApPitchDataRef = NULL;
 
 static uint32_t gMcpAvionicsPowerOn = 0;
 static uint32_t gMcpBatteryOn = 0;
@@ -175,7 +163,6 @@ static uint32_t gMcpRevState = 0;
 static uint32_t gMcpAutoThrottleState = 0;
 static uint32_t gMcpTogaState = 0;
 static uint32_t gMcpTogaLateralState = 0;
-static uint32_t gMcpPitchState = 0;
 static uint32_t gMcpAutopilotState = 0;
 static uint32_t gMcpReadButtonAPState = 0;
 static uint32_t gMcpReadButtonFDLState = 0;
@@ -248,13 +235,6 @@ int MainControlPanelCommandHandler(XPLMCommandRef    inCommand,
 			break;
 		case MCP_AP_REV_CMD_MSG:
 			gMcpRevState = XPLMGetDatai(gMcpApRevDataRef);
-			break;
-		case MCP_PITCH_TRIM_DN_CMD_MSG:
-		case MCP_PITCH_TRIM_UP_CMD_MSG:
-		case MCP_PITCH_TRIM_TAKEOFF_CMD_MSG:
-			break;
-		case MCP_FLAPS_DN_CMD_MSG:
-		case MCP_FLAPS_UP_CMD_MSG:
 			break;
 		default:
 			break;
@@ -377,7 +357,7 @@ inline void mcp_update_leds() {
 			gMcpIasState, gMcpAltHoldState,	gMcpVsState,
 			gMcpAprState, gMcpRevState,	gMcpAutoThrottleState,
 			gMcpTogaState, gMcpTogaLateralState, gMcpGlideSlopeState,
-			gMcpPitchState, (gMcpAutopilotState), gMcpVNavArmed);
+			(gMcpAutopilotState), gMcpVNavArmed);
 	XPLMDebugString(Buffer);
 */	if (gMcpVNavState) {
 		leds4 |= 0x01;
@@ -813,7 +793,6 @@ void mcp_update_datarefs() {
     gMcpIASIsMach = XPLMGetDatai(gMcpArspdIsMachDataRef);
     gMcpTogaState = XPLMGetDatai(gMcpApTogaDataRef);
     gMcpTogaLateralState = XPLMGetDatai(gMcpApTogaLateralDataRef);
-    gMcpPitchState = XPLMGetDatai(gMcpApPitchDataRef);
 
 }
 
@@ -878,18 +857,6 @@ void mcp_init() {
     XPLMRegisterCommandHandler(gMcpApHeadingSyncCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_HEADING_SYNC_CMD_MSG);
     XPLMRegisterCommandHandler(gMcpApAltitudeSyncCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_AP_ALTITUDE_SYNC_CMD_MSG);
 
-    gMcpPitchTrimDnCmdRef         = XPLMFindCommand(sMCP_PITCH_TRIM_DOWN_CR);
-    gMcpPitchTrimUpCmdRef         = XPLMFindCommand(sMCP_PITCH_TRIM_UP_CR);
-    gMcpPitchTrimTakeoffCmdRef    = XPLMFindCommand(sMCP_PITCH_TRIM_TAKEOFF_CR);
-    gMcpFlapsDnCmdRef             = XPLMFindCommand(sMCP_FLAPS_DOWN_CR);
-    gMcpFlapsUpCmdRef             = XPLMFindCommand(sMCP_FLAPS_UP_CR);
-
-    XPLMRegisterCommandHandler(gMcpPitchTrimDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_PITCH_TRIM_DN_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpPitchTrimUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_PITCH_TRIM_UP_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpPitchTrimTakeoffCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_PITCH_TRIM_TAKEOFF_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpFlapsDnCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_FLAPS_DN_CMD_MSG);
-    XPLMRegisterCommandHandler(gMcpFlapsUpCmdRef, MainControlPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MCP_FLAPS_UP_CMD_MSG);
-
     gMcpAltHoldFtDataRef         = XPLMFindDataRef(sMCP_ALTITUDE_DIAL_FT_DR);
     gMcpVrtVelDataRef            = XPLMFindDataRef(sMCP_VVI_DIAL_FPM_DR);
     gMcpVSDataRef                = XPLMFindDataRef(sMCP_VVI_DIAL_FPM_DR);
@@ -935,7 +902,6 @@ void mcp_init() {
     gMcpApAutoThrottleDataRef = XPLMFindDataRef(sMCP_AP_AUTOTHROTTLE_ON_DR);
     gMcpApTogaDataRef = XPLMFindDataRef(sMCP_AP_TOGA_STATUS_DR);
     gMcpApTogaLateralDataRef = XPLMFindDataRef(sMCP_AP_TOGA_LATERAL_STATUS_DR);
-    gMcpApPitchDataRef = XPLMFindDataRef(sMCP_AP_PITCH_STATUS_DR);
 
 
 	gMcpAvionicsPowerOn = XPLMGetDatai(gMcpAvionicsPowerOnDataRef);
@@ -959,7 +925,6 @@ void mcp_init() {
     gMcpAutoThrottleState = XPLMGetDatai(gMcpApAutoThrottleDataRef);
     gMcpTogaState = XPLMGetDatai(gMcpApTogaDataRef);
     gMcpTogaLateralState = XPLMGetDatai(gMcpApTogaLateralDataRef);
-    gMcpPitchState = XPLMGetDatai(gMcpApPitchDataRef);
 
 }
 

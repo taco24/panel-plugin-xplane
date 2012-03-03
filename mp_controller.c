@@ -425,9 +425,9 @@ void mp_init() {
     gMpFlapsDnCmdRef             = XPLMFindCommand(sMP_FLAPS_DOWN_CR);
     gMpFlapsUpCmdRef             = XPLMFindCommand(sMP_FLAPS_UP_CR);
 
-    XPLMRegisterCommandHandler(gMpPitchTrimDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_DN_CMD_MSG);
-    XPLMRegisterCommandHandler(gMpPitchTrimUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_UP_CMD_MSG);
-    XPLMRegisterCommandHandler(gMpPitchTrimTakeoffCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_TAKEOFF_CMD_MSG);
+//    XPLMRegisterCommandHandler(gMpPitchTrimDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_DN_CMD_MSG);
+//    XPLMRegisterCommandHandler(gMpPitchTrimUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_UP_CMD_MSG);
+//    XPLMRegisterCommandHandler(gMpPitchTrimTakeoffCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_TAKEOFF_CMD_MSG);
     XPLMRegisterCommandHandler(gMpFlapsDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_FLAPS_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMpFlapsUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_FLAPS_UP_CMD_MSG);
 
@@ -512,15 +512,22 @@ void *mpRun(void *ptr_thread_data) {
 				if (inReportBytesCount > 3) {
 					sprintf(tmp, "-> CP: mp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
-				}
+				} else if (inReportBytesCount == 2) {
+					counter2++;
+					uint32_t msg = 0;
+					msg += buf[1] << 16;
+					msg += buf[0] << 8;
+					mp_process(msg);
+				} else {
 //			    sprintf(tmp, "-> CP: mp_controller.run: msg %d: %#0x,%#0x,%#0x\n", counter, buf[2], buf[1], buf[0]);
 //				XPLMDebugString(tmp);
-				counter2++;
-				uint32_t msg = 0;
-				msg += buf[2] << 16;
-				msg += buf[1] << 8;
-				msg += buf[0];
-				mp_process(msg);
+					counter2++;
+					uint32_t msg = 0;
+					msg += buf[2] << 16;
+					msg += buf[1] << 8;
+					msg += buf[0];
+					mp_process(msg);
+				}
 			}
 		}
 		///////////////////////////////////////////////////////////////////////////
@@ -537,12 +544,19 @@ void *mpRun(void *ptr_thread_data) {
 				if (inReportBytesCount > 3) {
 					sprintf(tmp, "-> CP: mp_controller.run: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
+				} else if (inReportBytesCount == 2) {
+					counter2++;
+					uint32_t msg = 0;
+					msg += buf[1] << 16;
+					msg += buf[0] << 8;
+					mp_process(msg);
+				} else {
+					uint32_t msg = 0;
+					msg += buf[2] << 16;
+					msg += buf[1] << 8;
+					msg += buf[0];
+					mp_process(msg);
 				}
-				uint32_t msg = 0;
-				msg += buf[2] << 16;
-				msg += buf[1] << 8;
-				msg += buf[0];
-				mp_process(msg);
 			}
 			uint32_t pos_negativ = MP_LED_PLUS_SIGN;
 			switch (gIndicatorKnob) {

@@ -851,13 +851,20 @@ void *rpRun(void *ptr_thread_data) {
 
 	gPtrThreadData = (struct rp_thread_data *) ptr_thread_data;
 
-	int result = panel_open();
+	int result = rp_panel_open();
 	if (result < 0) {
 		XPLMDebugString("-> CP: rp_controller.rpRun: shutdown thread.\n");
 		pthread_exit(NULL);
 		return 0;
 	}
 	XPLMDebugString("-> CP: rp_controller.rpRun: panel opened.\n");
+	rp_panel_write(rp_blank_panel);
+	inReportBytesCount = rp_panel_read_non_blocking(buf);
+	// URB_FUNCTION_CLASS_INTERFACE request should be 0x01 instead of 0x09
+	rp_panel_write_empty();
+	inReportBytesCount = rp_panel_read_non_blocking(buf);
+	rp_panel_write(rp_zero_panel);
+	inReportBytesCount = rp_panel_read_non_blocking(buf);
 
 	last_mainloop_idle = sys_time_clock_get_time_usec();
 	// while stop == 0 calculate position.
@@ -871,18 +878,25 @@ void *rpRun(void *ptr_thread_data) {
 			// read/write board
 			counter++;
 			rp_prepare_write_buffer(counter, counter2);
-			inReportBytesCount = panel_read_non_blocking(buf);
+			inReportBytesCount = rp_panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
 				if (inReportBytesCount > 3) {
 					sprintf(tmp, "-> CP: rp_controller.rpRun: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
+				} else if (inReportBytesCount == 2) {
+					counter2++;
+					uint32_t msg = 0;
+					msg += buf[1] << 16;
+					msg += buf[0] << 8;
+					rp_process(msg);
+				} else {
+					counter2++;
+					uint32_t msg = 0;
+					msg += buf[2] << 16;
+					msg += buf[1] << 8;
+					msg += buf[0];
+					rp_process(msg);
 				}
-				counter2++;
-				uint32_t msg = 0;
-				msg += buf[2] << 16;
-				msg += buf[1] << 8;
-				msg += buf[0];
-				rp_process(msg);
 			}
 		}
 		///////////////////////////////////////////////////////////////////////////
@@ -894,24 +908,31 @@ void *rpRun(void *ptr_thread_data) {
 			// Update local DataRefs.
 			rp_update_datarefs();
 			// update Panel.
-			inReportBytesCount = panel_read_non_blocking(buf);
+			inReportBytesCount = rp_panel_read_non_blocking(buf);
 			if (inReportBytesCount > 0) {
 				if (inReportBytesCount > 3) {
 					sprintf(tmp, "-> CP: rp_controller.rpRun: bytes in report %d: %#0x,%#0x,%#0x\n", inReportBytesCount, buf[2], buf[1], buf[0]);
 					XPLMDebugString(tmp);
+				} else if (inReportBytesCount == 2) {
+					counter2++;
+					uint32_t msg = 0;
+					msg += buf[1] << 16;
+					msg += buf[0] << 8;
+					rp_process(msg);
+				} else {
+					uint32_t msg = 0;
+					msg += buf[2] << 16;
+					msg += buf[1] << 8;
+					msg += buf[0];
+					rp_process(msg);
 				}
-				uint32_t msg = 0;
-				msg += buf[2] << 16;
-				msg += buf[1] << 8;
-				msg += buf[0];
-				rp_process(msg);
 			}
 			if (rp_has_changed(writeBuf, writeBufPrev)) {
 				int i = 0;
 				for(i = 0; i < RP_OUT_BUF_SIZE; i++) {
 					writeBufPrev[i] = writeBuf[i];
 				}
-				panel_write(writeBuf);
+				rp_panel_write(writeBuf);
 			}
 		}
 		///////////////////////////////////////////////////////////////////////////
@@ -930,7 +951,7 @@ void *rpRun(void *ptr_thread_data) {
 		usleep(SLEEP_TIME * 2);
 #endif
 	}
-	panel_close();
+	rp_panel_close();
 #if IBM
 		Sleep(SLEEP_TIME * 2);
 #else

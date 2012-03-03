@@ -35,12 +35,15 @@
 #define RP_READ_LOWER_COARSE_RIGHT   (0x400000)
 #define RP_READ_LOWER_COARSE_LEFT    (0x800000)
 
-extern int panel_open();
-extern int panel_write(unsigned char *buf);
-extern int panel_read_non_blocking(unsigned char *buf);
-extern int panel_close();
+extern int rp_panel_open();
+extern int rp_panel_write(unsigned char *buf);
+extern int rp_panel_write_empty();
+extern int rp_panel_read_blocking(unsigned char *buf);
+extern int rp_panel_read_non_blocking(unsigned char *buf);
+extern int rp_panel_close();
 
 extern unsigned char rp_blank_panel[RP_OUT_BUF_SIZE];
+extern unsigned char rp_zero_panel[RP_OUT_BUF_SIZE];
 
 
 #endif /* RP_DRIVER_H_ */

@@ -31,7 +31,7 @@ unsigned char rp_blank_panel[RP_OUT_BUF_SIZE] = {0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-int panel_open() {
+int rp_panel_open() {
 	int res = 0;
 
 	rpHandle = hid_open(VENDOR_ID, RP_PROD_ID, NULL);
@@ -50,21 +50,10 @@ int panel_open() {
 	    sprintf(tmp, "-> CP: rp_driver.panel_open: Error: %ls\n", hid_error(rpHandle));
 		XPLMDebugString(tmp);
 	}
-	hid_set_nonblocking(rpHandle, 1);
-	res = hid_read(rpHandle, rp_in_buf, RP_IN_BUF_SIZE);
-	if (res < 0) {
-	    sprintf(tmp, "-> CP: rp_driver.panel_open: Error: %ls\n", hid_error(rpHandle));
-		XPLMDebugString(tmp);
-	}
-	res = hid_send_feature_report(rpHandle, rp_zero_panel, RP_OUT_BUF_SIZE);
-	if (res < 0) {
-	    sprintf(tmp, "-> CP: rp_driver.panel_open: Error: %ls\n", hid_error(rpHandle));
-		XPLMDebugString(tmp);
-	}
 	return 0;
 }
 
-int panel_write(unsigned char buf[]) {
+int rp_panel_write(unsigned char buf[]) {
 	int res = 0;
 	if (rpHandle) {
 		res = hid_send_feature_report(rpHandle, buf,
@@ -77,7 +66,35 @@ int panel_write(unsigned char buf[]) {
 	return res;
 }
 
-int panel_read_non_blocking(unsigned char *buf) {
+int rp_panel_write_empty() {
+	int res = 0;
+	unsigned char rp_empty_buf[0];
+	if (rpHandle) {
+		res = hid_send_feature_report(rpHandle, rp_empty_buf,
+				0);
+		if (res < 0) {
+		    sprintf(tmp, "-> CP: rp_driver.panel_write_empty: Error: %ls\n", hid_error(rpHandle));
+			XPLMDebugString(tmp);
+		}
+	}
+	return res;
+}
+
+
+int rp_panel_read_blocking(unsigned char *buf) {
+	int res = 0;
+	if (rpHandle) {
+		hid_set_nonblocking(rpHandle, 0);
+		res = hid_read_timeout(rpHandle, buf, RP_IN_BUF_SIZE, 100);
+		if (res < 0) {
+		    sprintf(tmp, "-> CP: rp_driver.panel_read_blocking: Error: %ls\n", hid_error(rpHandle));
+			XPLMDebugString(tmp);
+		}
+	}
+	return res;
+}
+
+int rp_panel_read_non_blocking(unsigned char *buf) {
 	int res = 0;
 	if (rpHandle) {
 		hid_set_nonblocking(rpHandle, 1);
@@ -90,7 +107,7 @@ int panel_read_non_blocking(unsigned char *buf) {
 	return res;
 }
 
-int panel_close() {
+int rp_panel_close() {
 	int res = 0;
 	if (rpHandle) {
 		res = hid_send_feature_report(rpHandle, rp_blank_panel, RP_OUT_BUF_SIZE);
