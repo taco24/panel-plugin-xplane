@@ -141,7 +141,7 @@ static uint32_t gMpAutopilotState = 0;
 static uint32_t gMpAutopilotMode = 0;
 
 static int gIndicatorKnob = MP_KNOB_ALT;
-static int altdbncinc = 0, altdbncdec = 0, vsdbncinc = 0, vsdbncdec = 0;
+//static int altdbncinc = 0, altdbncdec = 0, vsdbncinc = 0, vsdbncdec = 0;
 static int iasdbncinc = 0, iasdbncdec = 0, hdgdbncinc = 0, hdgdbncdec = 0;
 static int crsdbncinc = 0, crsdbncdec = 0;
 
@@ -276,9 +276,17 @@ int mp_process(uint32_t msg) {
 					XPLMCommandOnce(gMpAsUpCmdRef);
 				}
 			} else if (readKnob == MP_READ_KNOB_HDG) {
-				XPLMCommandOnce(gMpHdgUpCmdRef);
+				hdgdbncinc++;
+				if (hdgdbncinc > 3) {
+					hdgdbncinc = 0;
+					XPLMCommandOnce(gMpHdgUpCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_CRS) {
-				XPLMCommandOnce(gMpObsHsiUpCmdRef);
+				crsdbncinc++;
+				if (crsdbncinc > 1) {
+					crsdbncinc = 0;
+					XPLMCommandOnce(gMpObsHsiUpCmdRef);
+				}
 			}
 		} else if (readTuning == MP_READ_TUNING_LEFT) {
 			if (readKnob == MP_READ_KNOB_ALT) {
@@ -292,9 +300,17 @@ int mp_process(uint32_t msg) {
 					XPLMCommandOnce(gMpAsDnCmdRef);
 				}
 			} else if (readKnob == MP_READ_KNOB_HDG) {
-				XPLMCommandOnce(gMpHdgDnCmdRef);
+				hdgdbncdec++;
+				if (hdgdbncdec > 3) {
+					hdgdbncdec = 0;
+					XPLMCommandOnce(gMpHdgDnCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_CRS) {
-				XPLMCommandOnce(gMpObsHsiDnCmdRef);
+				crsdbncdec++;
+				if (crsdbncdec > 1) {
+					crsdbncdec = 0;
+					XPLMCommandOnce(gMpObsHsiDnCmdRef);
+				}
 			}
 		}
     }
