@@ -69,12 +69,23 @@ extern void *rpRun(void *ptr_thread_data);
 #define sRP_NAV2_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/nav2_stdby_freq_hz"
 
 
-#define sRP_ACTV_ADF1_HUNDREDS_UP_CR      "sim/radios/actv_adf1_hundreds_up"
-#define sRP_ACTV_ADF1_HUNDREDS_DOWN_CR    "sim/radios/actv_adf1_hundreds_down"
-#define sRP_ACTV_ADF1_TENS_UP_CR          "sim/radios/actv_adf1_tens_up"
-#define sRP_ACTV_ADF1_TENS_DOWN_CR        "sim/radios/actv_adf1_tens_down"
-#define sRP_ACTV_ADF1_ONES_UP_CR          "sim/radios/actv_adf1_ones_up"
-#define sRP_ACTV_ADF1_ONES_DOWN_CR        "sim/radios/actv_adf1_ones_down"
+#define sRP_ACTV_ADF1_HUNDREDS_UP_CR      "sim/radios/stby_adf1_hundreds_up"
+#define sRP_ACTV_ADF1_HUNDREDS_DOWN_CR    "sim/radios/stby_adf1_hundreds_down"
+#define sRP_ACTV_ADF1_TENS_UP_CR          "sim/radios/stby_adf1_tens_up"
+#define sRP_ACTV_ADF1_TENS_DOWN_CR        "sim/radios/stby_adf1_tens_down"
+#define sRP_ACTV_ADF1_ONES_UP_CR          "sim/radios/stby_adf1_ones_up"
+#define sRP_ACTV_ADF1_ONES_DOWN_CR        "sim/radios/stby_adf1_ones_down"
+
+#define sRP_ADF1_STBY_FLIP_CR             "sim/radios/adf1_standy_flip"
+
+#define sRP_ACTV_ADF2_HUNDREDS_UP_CR      "sim/radios/stby_adf2_hundreds_up"
+#define sRP_ACTV_ADF2_HUNDREDS_DOWN_CR    "sim/radios/stby_adf2_hundreds_down"
+#define sRP_ACTV_ADF2_TENS_UP_CR          "sim/radios/stby_adf2_tens_up"
+#define sRP_ACTV_ADF2_TENS_DOWN_CR        "sim/radios/stby_adf2_tens_down"
+#define sRP_ACTV_ADF2_ONES_UP_CR          "sim/radios/stby_adf2_ones_up"
+#define sRP_ACTV_ADF2_ONES_DOWN_CR        "sim/radios/stby_adf2_ones_down"
+
+#define sRP_ADF2_STBY_FLIP_CR             "sim/radios/adf2_standy_flip"
 
 #define sRP_XPDR_THOUSANDS_UP_CR          "sim/transponder/transponder_thousands_up"
 #define sRP_XPDR_THOUSANDS_DOWN_CR        "sim/transponder/transponder_thousands_down"
@@ -87,6 +98,9 @@ extern void *rpRun(void *ptr_thread_data);
 
 #define sRP_XPDR_CODE_DR                  "sim/cockpit/radios/transponder_code"
 #define sRP_ADF1_FREQ_HZ_DR               "sim/cockpit/radios/adf1_freq_hz"
+#define sRP_ADF1_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/adf1_stdby_freq_hz"
+#define sRP_ADF2_FREQ_HZ_DR               "sim/cockpit/radios/adf2_freq_hz"
+#define sRP_ADF2_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/adf2_stdby_freq_hz"
 #define sRP_NAV1_DME_DISTANCE_NM_DR       "sim/cockpit2/radios/indicators/nav1_dme_distance_nm"
 #define sRP_NAV1_DME_SPEED_KTS_DR         "sim/cockpit2/radios/indicators/nav1_dme_speed_kts"
 #define sRP_NAV2_DME_DISTANCE_NM_DR       "sim/cockpit2/radios/indicators/nav2_dme_distance_nm"
