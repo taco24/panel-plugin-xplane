@@ -190,6 +190,7 @@ uint32_t gSpNumberOfEngines = 0;
 uint32_t gSpBatteryArrayOn = 0;
 uint32_t gSpGearRetract = 0;
 uint32_t gSpOnGround = 0;
+static uint32_t gSpOnGroundCounter = 0;
 float gSpLandingGearStatus[10];
 uint32_t gSpGear1Fail = 0;
 uint32_t gSpGear2Fail = 0;
@@ -205,7 +206,6 @@ static uint32_t failed2dn;
 static uint32_t failed3dn;
 static unsigned char gearled;
 static unsigned char gearledPrev;
-
 
 int SwitchPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
@@ -237,53 +237,58 @@ int SwitchPanelCommandHandler(XPLMCommandRef    inCommand,
 inline void sp_led_update() {
 
 	if (gSpGearRetract > 0) {
-		gearled = 0x00;
 		if(gSpOnGround > 0) {
+			gSpOnGroundCounter = 0;
 	    	if(gSpGearSwitchUp == 1){
 	    		gearled = 0x07;
 	    	} else {
 	    		gearled = 0x38;
 	    	}
 	    	return;
+	    } else {
+			gSpOnGroundCounter++;
+	    	if (gSpOnGroundCounter < 10) {
+	    		return;
+	    	}
 	    }
 
 		XPLMGetDatavf(gSpLandingGearStatusDataRef, gSpLandingGearStatus, 0, 10);
         // Gear is down and locked
-        if (gSpLandingGearStatus[0] > 0.95) {
+        if (gSpLandingGearStatus[0] > 0.99) {
             gearled |= (1<<0);   // * set bit 0 in gearled to 1 *
             gearled &= ~(1<<3);   // * clear bit 3 in gearled to 0 *
         }
-        if (gSpLandingGearStatus[1] > 0.95) {
+        if (gSpLandingGearStatus[1] > 0.99) {
             gearled |= (1<<1);   // * set bit 1 in gearled to 1 *
             gearled &= ~(1<<4);   // * clear bit 4 in gearled to 0 *
         }
-        if (gSpLandingGearStatus[2] > 0.95) {
+        if (gSpLandingGearStatus[2] > 0.99) {
             gearled |= (1<<2);   // * set bit 2 in gearled to 1 *
             gearled &= ~(1<<5);   // * clear bit 5 in gearled to 0 *
         }
         // Gear is in motion
-        if ((gSpLandingGearStatus[0] > 0.05) &&(gSpLandingGearStatus[0] < 1)) {
+        if ((gSpLandingGearStatus[0] > 0.01) &&(gSpLandingGearStatus[0] < 0.99)) {
             gearled |= (1<<3);   // * set bit 3 in gearled to 1 *
             gearled &= ~(1<<0);   // * clear bit 0 in gearled to 0 *
         }
-        if ((gSpLandingGearStatus[1] > 0.05) &&(gSpLandingGearStatus[1] < 1)) {
+        if ((gSpLandingGearStatus[1] > 0.01) &&(gSpLandingGearStatus[1] < 0.99)) {
             gearled |= (1<<4);   // * set bit 4 in gearled to 1 *
             gearled &= ~(1<<1);   // * clear bit 1 in gearled to 0 *
         }
-        if ((gSpLandingGearStatus[2] > 0.05) &&(gSpLandingGearStatus[2] < 1)) {
+        if ((gSpLandingGearStatus[2] > 0.01) &&(gSpLandingGearStatus[2] < 0.99)) {
             gearled |= (1<<5);   // * set bit 5 in gearled to 1 *
             gearled &= ~(1<<2);   // * clear bit 2 in gearled to 0 *
         }
         // Gear is up
-        if (gSpLandingGearStatus[0] < 0.05) {
+        if (gSpLandingGearStatus[0] < 0.01) {
             gearled &= ~(1<<0);   // * clear bit 0 in gearled to 0 *
             gearled &= ~(1<<3);   // * clear bit 3 in gearled to 0 *
         }
-        if (gSpLandingGearStatus[1] < 0.05) {
+        if (gSpLandingGearStatus[1] < 0.01) {
             gearled &= ~(1<<1);   // * clear bit 1 in gearled to 0 *
             gearled &= ~(1<<4);   // * clear bit 4 in gearled to 0 *
         }
-        if (gSpLandingGearStatus[2] < 0.05) {
+        if (gSpLandingGearStatus[2] < 0.01) {
             gearled &= ~(1<<2);   // * clear bit 2 in gearled to 0 *
             gearled &= ~(1<<5);   // * clear bit 5 in gearled to 0 *
         }

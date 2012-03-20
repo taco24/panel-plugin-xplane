@@ -31,12 +31,9 @@ enum {
     MP_HDG_DN_CMD_MSG = MP_HDG_UP_CMD_MSG + 1,
     MP_CRS_UP_CMD_MSG,
     MP_CRS_DN_CMD_MSG = MP_CRS_UP_CMD_MSG + 1,
-    MP_PITCH_TRIM_UP_CMD_MSG,
-    MP_PITCH_TRIM_DN_CMD_MSG = MP_PITCH_TRIM_UP_CMD_MSG + 1,
     MP_AP_FD_UP_CMD_MSG,
     MP_AP_FD_DN_CMD_MSG = MP_AP_FD_UP_CMD_MSG + 1,
     MP_AP_FD_OFF_CMD_MSG,
-    MP_PITCH_TRIM_TAKEOFF_CMD_MSG,
     MP_AP_HEADING_CMD_MSG,
     MP_AP_NAV_CMD_MSG,
     MP_AP_IAS_CMD_MSG,
@@ -44,6 +41,9 @@ enum {
     MP_AP_VS_CMD_MSG,
     MP_AP_APR_CMD_MSG,
     MP_AP_REV_CMD_MSG,
+    MP_PITCH_TRIM_UP_CMD_MSG,
+    MP_PITCH_TRIM_DN_CMD_MSG,
+    MP_PITCH_TRIM_TAKEOFF_CMD_MSG,
     MP_FLAPS_DN_CMD_MSG,
     MP_FLAPS_UP_CMD_MSG
 };
@@ -63,6 +63,7 @@ static unsigned char buf[MP_IN_BUF_SIZE];
 static unsigned char writeBuf[MP_OUT_BUF_SIZE];
 static unsigned char writeBufPrev[MP_OUT_BUF_SIZE];
 static char tmp[100];
+static uint32_t buttonState = 0;
 
 /* MULTI PANEL Command Refs */
 XPLMCommandRef gMpAltDnCmdRef = NULL;
@@ -140,6 +141,9 @@ static uint32_t gMpAutopilotState = 0;
 static uint32_t gMpAutopilotMode = 0;
 
 static int gIndicatorKnob = MP_KNOB_ALT;
+static int altdbncinc = 0, altdbncdec = 0, vsdbncinc = 0, vsdbncdec = 0;
+static int iasdbncinc = 0, iasdbncdec = 0, hdgdbncinc = 0, hdgdbncdec = 0;
+static int crsdbncinc = 0, crsdbncdec = 0;
 
 
 int MultiPanelCommandHandler(XPLMCommandRef    inCommand,
@@ -266,7 +270,11 @@ int mp_process(uint32_t msg) {
 			} else if (readKnob == MP_READ_KNOB_VS) {
 				XPLMCommandOnce(gMpVrtclSpdUpCmdRef);
 			} else if (readKnob == MP_READ_KNOB_IAS) {
-				XPLMCommandOnce(gMpAsUpCmdRef);
+				iasdbncinc++;
+				if (iasdbncinc > 3) {
+					iasdbncinc = 0;
+					XPLMCommandOnce(gMpAsUpCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_HDG) {
 				XPLMCommandOnce(gMpHdgUpCmdRef);
 			} else if (readKnob == MP_READ_KNOB_CRS) {
@@ -278,7 +286,11 @@ int mp_process(uint32_t msg) {
 			} else if (readKnob == MP_READ_KNOB_VS) {
 				XPLMCommandOnce(gMpVrtclSpdDnCmdRef);
 			} else if (readKnob == MP_READ_KNOB_IAS) {
-				XPLMCommandOnce(gMpAsDnCmdRef);
+				iasdbncdec++;
+				if (iasdbncdec > 3) {
+					iasdbncdec = 0;
+					XPLMCommandOnce(gMpAsDnCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_HDG) {
 				XPLMCommandOnce(gMpHdgDnCmdRef);
 			} else if (readKnob == MP_READ_KNOB_CRS) {
@@ -287,7 +299,8 @@ int mp_process(uint32_t msg) {
 		}
     }
 
-    if (readButtons) {
+    if (readButtons && readButtons != buttonState) {
+    	buttonState = readButtons;
     	if (readButtons == MP_READ_AP_BTN) {
     		if (gMpAutopilotMode == 0) {
     			XPLMSetDatai(gMpApAutopilotModeDataRef, 1);
@@ -425,9 +438,9 @@ void mp_init() {
     gMpFlapsDnCmdRef             = XPLMFindCommand(sMP_FLAPS_DOWN_CR);
     gMpFlapsUpCmdRef             = XPLMFindCommand(sMP_FLAPS_UP_CR);
 
-//    XPLMRegisterCommandHandler(gMpPitchTrimDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_DN_CMD_MSG);
-//    XPLMRegisterCommandHandler(gMpPitchTrimUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_UP_CMD_MSG);
-//    XPLMRegisterCommandHandler(gMpPitchTrimTakeoffCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_TAKEOFF_CMD_MSG);
+    XPLMRegisterCommandHandler(gMpPitchTrimDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_DN_CMD_MSG);
+    XPLMRegisterCommandHandler(gMpPitchTrimUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_UP_CMD_MSG);
+    XPLMRegisterCommandHandler(gMpPitchTrimTakeoffCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_PITCH_TRIM_TAKEOFF_CMD_MSG);
     XPLMRegisterCommandHandler(gMpFlapsDnCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_FLAPS_DN_CMD_MSG);
     XPLMRegisterCommandHandler(gMpFlapsUpCmdRef, MultiPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) MP_FLAPS_UP_CMD_MSG);
 
