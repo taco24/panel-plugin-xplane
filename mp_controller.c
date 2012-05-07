@@ -116,6 +116,8 @@ static int32_t gMpVS = 0;
 static uint32_t gMpIAS = 0;
 static uint32_t gMpHDG = 0;
 static uint32_t gMpCRS = 0;
+static uint32_t gMpTrimCounterDown = 0;
+static uint32_t gMpTrimCounterUp = 0;
 
 XPLMDataRef gMpApMasterDataRef = NULL;
 XPLMDataRef gMpApHdgDataRef = NULL;
@@ -141,7 +143,7 @@ static uint32_t gMpAutopilotState = 0;
 static uint32_t gMpAutopilotMode = 0;
 
 static int gIndicatorKnob = MP_KNOB_ALT;
-//static int altdbncinc = 0, altdbncdec = 0, vsdbncinc = 0, vsdbncdec = 0;
+static int altdbncinc = 0, altdbncdec = 0, vsdbncinc = 0, vsdbncdec = 0;
 static int iasdbncinc = 0, iasdbncdec = 0, hdgdbncinc = 0, hdgdbncdec = 0;
 static int crsdbncinc = 0, crsdbncdec = 0;
 
@@ -240,6 +242,16 @@ inline void mp_led_update(uint32_t x, uint32_t y, uint32_t s, uint32_t buttons, 
     m[11] = ((buttons >>  0) & 0xFF);
 }
 
+void mp_process_trimwheel() {
+	if (gMpTrimCounterDown > 3) {
+		gMpTrimCounterDown = 0;
+		XPLMCommandOnce(gMpPitchTrimDnCmdRef);
+	} else if (gMpTrimCounterUp > 3) {
+		gMpTrimCounterUp = 0;
+	    XPLMCommandOnce(gMpPitchTrimUpCmdRef);
+	}
+}
+
 int mp_process(uint32_t msg) {
 //    sprintf(tmp, "-> CP: mp_controller.mp_process: msg: %d\n", msg);
 //	XPLMDebugString(tmp);
@@ -250,6 +262,14 @@ int mp_process(uint32_t msg) {
     uint32_t readFlaps = msg & MP_READ_FLAPS_MASK;
     uint32_t readTrim = msg & MP_READ_TRIM_MASK;
     uint32_t readAutoThrottle = msg & MP_READ_THROTTLE_MASK;
+
+    if (readTrim) {
+    	if (readTrim == MP_READ_TRIM_DOWN) {
+    		gMpTrimCounterDown++;
+    	} else if (readTrim == MP_READ_TRIM_UP) {
+    		gMpTrimCounterUp++;
+    	}
+    }
 
     if (readKnob == MP_READ_KNOB_ALT) {
     	gIndicatorKnob = MP_KNOB_ALT;
@@ -266,9 +286,17 @@ int mp_process(uint32_t msg) {
     if (readTuning) {
 		if (readTuning == MP_READ_TUNING_RIGHT) {
 			if (readKnob == MP_READ_KNOB_ALT) {
-				XPLMCommandOnce(gMpAltUpCmdRef);
+				altdbncinc++;
+				if (altdbncinc > 3) {
+					altdbncinc = 0;
+					XPLMCommandOnce(gMpAltUpCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_VS) {
-				XPLMCommandOnce(gMpVrtclSpdUpCmdRef);
+				vsdbncinc++;
+				if (vsdbncinc > 3) {
+					vsdbncinc = 0;
+					XPLMCommandOnce(gMpVrtclSpdUpCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_IAS) {
 				iasdbncinc++;
 				if (iasdbncinc > 3) {
@@ -290,9 +318,17 @@ int mp_process(uint32_t msg) {
 			}
 		} else if (readTuning == MP_READ_TUNING_LEFT) {
 			if (readKnob == MP_READ_KNOB_ALT) {
-				XPLMCommandOnce(gMpAltDnCmdRef);
+				altdbncdec++;
+				if (altdbncdec > 3) {
+					altdbncdec = 0;
+					XPLMCommandOnce(gMpAltDnCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_VS) {
-				XPLMCommandOnce(gMpVrtclSpdDnCmdRef);
+				vsdbncdec++;
+				if (vsdbncdec > 3) {
+					vsdbncdec = 0;
+					XPLMCommandOnce(gMpVrtclSpdDnCmdRef);
+				}
 			} else if (readKnob == MP_READ_KNOB_IAS) {
 				iasdbncdec++;
 				if (iasdbncdec > 3) {
@@ -352,14 +388,6 @@ int mp_process(uint32_t msg) {
     		XPLMCommandOnce(gMpFlapsDnCmdRef);
     	} else if (readFlaps == MP_READ_FLAPS_UP) {
     		XPLMCommandOnce(gMpFlapsUpCmdRef);
-    	}
-    }
-
-    if (readTrim) {
-    	if (readTrim == MP_READ_TRIM_DOWN) {
-    		XPLMCommandOnce(gMpPitchTrimDnCmdRef);
-    	} else if (readTrim == MP_READ_TRIM_UP) {
-    		XPLMCommandOnce(gMpPitchTrimUpCmdRef);
     	}
     }
 

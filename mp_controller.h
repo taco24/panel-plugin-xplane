@@ -5,6 +5,7 @@
 #include "defs.h"
 
 extern void *mpRun(void *ptr_thread_data);
+extern void mp_process_trimwheel();
 
 
 // Multi Panel

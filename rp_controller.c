@@ -178,6 +178,7 @@ XPLMDataRef gRpNAV2FreqHzDataRef = NULL;
 XPLMDataRef gRpNAV2StdbyFreqHzDataRef = NULL;
 
 XPLMDataRef gRpXpdrCodeDataRef = NULL;
+XPLMDataRef gRpQNHCodeDataRef = NULL;
 XPLMDataRef gRpADF1FreqHzDataRef = NULL;
 XPLMDataRef gRpADF1StdbyFreqHzDataRef = NULL;
 XPLMDataRef gRpADF2FreqHzDataRef = NULL;
@@ -202,6 +203,7 @@ uint32_t gRpNAV2StbyFreq = 0;
 uint32_t gRpNAV2Freq = 0;
 
 uint32_t gRpXpdrCode = 0;
+float    gRpQNHCode = 0;
 uint32_t gRpADF1FreqHz = 0;
 uint32_t gRpADF1StdbyFreqHz = 0;
 uint32_t gRpADF2FreqHz = 0;
@@ -629,6 +631,7 @@ void rp_update_datarefs() {
     gRpNAV2Freq = (XPLMGetDatai(gRpNAV2FreqHzDataRef));
 
     gRpXpdrCode = (XPLMGetDatai(gRpXpdrCodeDataRef));
+    gRpQNHCode = (XPLMGetDataf(gRpQNHCodeDataRef));
     gRpADF1FreqHz = (XPLMGetDatai(gRpADF1FreqHzDataRef));
     gRpADF1StdbyFreqHz = (XPLMGetDatai(gRpADF1StdbyFreqHzDataRef));
     gRpADF2FreqHz = (XPLMGetDatai(gRpADF2FreqHzDataRef));
@@ -775,6 +778,7 @@ void rp_init() {
     gRpXpdrOnesDownCmdRef = XPLMFindCommand(sRP_XPDR_ONES_DOWN_CR);
 
     gRpXpdrCodeDataRef = XPLMFindDataRef(sRP_XPDR_CODE_DR);
+    gRpQNHCodeDataRef = XPLMFindDataRef(sRP_QNH_CODE_DR);
     gRpADF1FreqHzDataRef = XPLMFindDataRef(sRP_ADF1_FREQ_HZ_DR);
     gRpADF1StdbyFreqHzDataRef = XPLMFindDataRef(sRP_ADF1_STDBY_FREQ_HZ_DR);
     gRpADF2FreqHzDataRef = XPLMFindDataRef(sRP_ADF2_FREQ_HZ_DR);
@@ -786,6 +790,7 @@ void rp_init() {
     gRpDmeSlaveSourceDataRef = XPLMFindDataRef(sRP_DME_SLAVE_SOURCE_DR);
 
     gRpXpdrCode = (XPLMGetDatai(gRpXpdrCodeDataRef));
+    gRpQNHCode = (XPLMGetDataf(gRpQNHCodeDataRef));
     gRpADF1FreqHz = (XPLMGetDatai(gRpADF1FreqHzDataRef));
     gRpADF1StdbyFreqHz = (XPLMGetDatai(gRpADF1StdbyFreqHzDataRef));
     gRpADF2FreqHz = (XPLMGetDatai(gRpADF2FreqHzDataRef));
@@ -848,7 +853,7 @@ void rp_prepare_write_buffer(int i, int j) {
 	case 0x000040:
 	case 0x002000:
 		tmp1 = dec2bcd(gRpXpdrCode, 5);
-		tmp2 = dec2bcd(gRpXpdrCode, 5);
+		tmp2 = dec2bcd(round(gRpQNHCode), 5);
 		upperPos1 = 0xFF;
 		break;
 	default:
@@ -896,7 +901,7 @@ void rp_prepare_write_buffer(int i, int j) {
 	case 0x000040:
 	case 0x002000:
 		tmp3 = dec2bcd(gRpXpdrCode, 5);
-		tmp4 = dec2bcd(gRpXpdrCode, 5);
+		tmp4 = dec2bcd(round(gRpQNHCode), 5);
 		lowerPos1 = 0xFF;
 		break;
 	default:

@@ -56,7 +56,10 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
                                    float   inElapsedTimeSinceLastFlightLoop,
                                    int     inCounter,
                                    void*   inRefcon) {
-    return -1.0; // call again next loop;
+
+	// trimwheel changes must be synchronized with OpenGL to prevent X-Plane crashes.
+	mp_process_trimwheel();
+	return FL_CB_INTERVAL; // call again next loop;
 }
 
 PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
@@ -183,3 +186,5 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFrom, long inMsg, void* inP
         } // switch (inMsg)
     } // if (inFrom == XPLM_PLUGIN_XPLANE)
 }
+
+
