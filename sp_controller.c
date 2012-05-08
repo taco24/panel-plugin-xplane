@@ -788,7 +788,7 @@ void sp_update_datarefs() {
     gSpNumberOfBatteries = (XPLMGetDatai(gSpNumberOfBatteriesDataRef));
     gSpNumberOfGenerators = (XPLMGetDatai(gSpNumberOfGeneratorsDataRef));
     gSpNumberOfEngines = (XPLMGetDatai(gSpNumberOfEnginesDataRef));
-    gSpBatteryArrayOn = (XPLMGetDatai(gSpCowlFlapsDataRef));
+    gSpBatteryArrayOn = (XPLMGetDatai(gSpBatteryArrayOnDataRef));
     gSpGearRetract = (XPLMGetDatai(gSpGearRetractDataRef));
     gSpOnGround = (XPLMGetDatai(gSpOnGroundDataRef));
     XPLMGetDatavf(gSpLandingGearStatusDataRef, gSpLandingGearStatus, 0, 10);

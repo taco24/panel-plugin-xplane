@@ -49,6 +49,6 @@ extern int mp_panel_open();
 extern int mp_panel_write(unsigned char *buf);
 extern int mp_panel_read_non_blocking(unsigned char *buf);
 extern int mp_panel_close();
-
+extern unsigned char mp_blank_panel[MP_OUT_BUF_SIZE];
 
 #endif /* MP_DRIVER_H_ */

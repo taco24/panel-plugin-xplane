@@ -214,6 +214,8 @@ uint32_t gRpNAV2DmeDistanceNm = 0;
 uint32_t gRpNAV2DmeSpeedKts = 0;
 uint32_t gRpDmeSlaveSource = 0;
 
+static int powerOn = 0;
+
 
 int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
@@ -330,6 +332,19 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
  }
 
  return status;
+}
+
+void rp_process_power(uint32_t gPanelBatteryOn, uint32_t gPanelGeneratorOn, uint32_t gPanelAvionicsOn) {
+	if (gPanelGeneratorOn || gPanelBatteryOn) {
+		if (gPanelAvionicsOn == 1) {
+			powerOn = 1;
+		} else {
+			powerOn = 0;
+		}
+	} else {
+		powerOn = 0;
+	}
+
 }
 
 int rp_has_changed(unsigned char a[], unsigned char b[]) {
@@ -853,7 +868,7 @@ void rp_prepare_write_buffer(int i, int j) {
 	case 0x000040:
 	case 0x002000:
 		tmp1 = dec2bcd(gRpXpdrCode, 5);
-		tmp2 = dec2bcd(round(gRpQNHCode), 5);
+		tmp2 = dec2bcd(round(gRpQNHCode * 100.0), 5);
 		upperPos1 = 0xFF;
 		break;
 	default:
@@ -901,7 +916,7 @@ void rp_prepare_write_buffer(int i, int j) {
 	case 0x000040:
 	case 0x002000:
 		tmp3 = dec2bcd(gRpXpdrCode, 5);
-		tmp4 = dec2bcd(round(gRpQNHCode), 5);
+		tmp4 = dec2bcd(round(gRpQNHCode * 100.0), 5);
 		lowerPos1 = 0xFF;
 		break;
 	default:
@@ -915,6 +930,7 @@ void *rpRun(void *ptr_thread_data) {
 	int counter = 0;
 	int counter2 = 0;
 	int inReportBytesCount = 0;
+	int i;
 
 #if IBM
 		Sleep(SLEEP_TIME * 2);
@@ -1000,6 +1016,11 @@ void *rpRun(void *ptr_thread_data) {
 					msg += buf[1] << 8;
 					msg += buf[0];
 					rp_process(msg);
+				}
+			}
+			if (powerOn == 0) {
+				for (i = 0; i < RP_OUT_BUF_SIZE; i++) {
+					writeBuf[i] = rp_blank_panel[i];
 				}
 			}
 			if (rp_has_changed(writeBuf, writeBufPrev)) {

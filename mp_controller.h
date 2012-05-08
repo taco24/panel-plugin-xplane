@@ -6,6 +6,7 @@
 
 extern void *mpRun(void *ptr_thread_data);
 extern void mp_process_trimwheel();
+extern void mp_process_power(uint32_t gPanelBatteryOn, uint32_t gPanelGeneratorOn, uint32_t gPanelAvionicsOn);
 
 
 // Multi Panel

@@ -146,7 +146,7 @@ static int gIndicatorKnob = MP_KNOB_ALT;
 static int altdbncinc = 0, altdbncdec = 0, vsdbncinc = 0, vsdbncdec = 0;
 static int iasdbncinc = 0, iasdbncdec = 0, hdgdbncinc = 0, hdgdbncdec = 0;
 static int crsdbncinc = 0, crsdbncdec = 0;
-
+static int powerOn = 0;
 
 int MultiPanelCommandHandler(XPLMCommandRef    inCommand,
                              XPLMCommandPhase  inPhase,
@@ -251,6 +251,19 @@ void mp_process_trimwheel() {
 	    XPLMCommandOnce(gMpPitchTrimUpCmdRef);
 	}
 }
+
+void mp_process_power(uint32_t gPanelBatteryOn, uint32_t gPanelGeneratorOn, uint32_t gPanelAvionicsOn) {
+	if (gPanelGeneratorOn || gPanelBatteryOn) {
+		if (gPanelAvionicsOn == 1) {
+			powerOn = 1;
+		} else {
+			powerOn = 0;
+		}
+	} else {
+		powerOn = 0;
+	}
+}
+
 
 int mp_process(uint32_t msg) {
 //    sprintf(tmp, "-> CP: mp_controller.mp_process: msg: %d\n", msg);
@@ -534,6 +547,7 @@ void *mpRun(void *ptr_thread_data) {
 	uint32_t tmp2 = 0;
 	uint32_t buttons = 0;
 	int inReportBytesCount = 0;
+	int i;
 
 #if IBM
 		Sleep(SLEEP_TIME);
@@ -668,6 +682,11 @@ void *mpRun(void *ptr_thread_data) {
 				buttons |= 0x80;
 			}
 			mp_led_update(tmp1, tmp2, pos_negativ, buttons, writeBuf);
+			if (powerOn == 0) {
+				for (i = 0; i < MP_OUT_BUF_SIZE; i++) {
+					writeBuf[i] = mp_blank_panel[i];
+				}
+			}
 			if (mp_has_changed(writeBuf, writeBufPrev)) {
 				int i = 0;
 				for(i = 0; i < MP_OUT_BUF_SIZE; i++) {

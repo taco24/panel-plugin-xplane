@@ -52,6 +52,13 @@ pthread_t gMcpThread;
 int gMcpThreadID = 2;
 int gMcpThreadReturnCode = 0;
 
+XPLMDataRef gPanelBatteryOnDataRef = NULL;
+XPLMDataRef gPanelGeneratorOnDataRef = NULL;
+XPLMDataRef gPanelAvionicsOnDataRef = NULL;
+uint32_t gPanelBatteryOn = 0;
+uint32_t gPanelGeneratorOn = 0;
+uint32_t gPanelAvionicsOn = 0;
+
 float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
                                    float   inElapsedTimeSinceLastFlightLoop,
                                    int     inCounter,
@@ -59,6 +66,11 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
 
 	// trimwheel changes must be synchronized with OpenGL to prevent X-Plane crashes.
 	mp_process_trimwheel();
+	gPanelBatteryOn = (XPLMGetDatai(gPanelBatteryOnDataRef));
+	gPanelGeneratorOn = (XPLMGetDatai(gPanelGeneratorOnDataRef));
+	gPanelAvionicsOn = (XPLMGetDatai(gPanelAvionicsOnDataRef));
+	mp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+	rp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
 	return FL_CB_INTERVAL; // call again next loop;
 }
 
@@ -125,6 +137,10 @@ PLUGIN_API int XPluginEnable(void) {
 	} else {
 		XPLMDebugString("-> CP: XPluginEnable: McpThread started.\n");
 	}
+
+	gPanelBatteryOnDataRef = XPLMFindDataRef(sPANEL_BATTERY_ON_DR);
+	gPanelGeneratorOnDataRef = XPLMFindDataRef(sPANEL_GENERATOR_ON_DR);
+	gPanelAvionicsOnDataRef = XPLMFindDataRef(sPANEL_AVIONICS_ON_DR);
 
 	return 1;
 }

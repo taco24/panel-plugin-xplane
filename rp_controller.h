@@ -4,6 +4,7 @@
 #include <pthread.h>
 
 extern void *rpRun(void *ptr_thread_data);
+extern void rp_process_power(uint32_t gPanelBatteryOn, uint32_t gPanelGeneratorOn, uint32_t gPanelAvionicsOn);
 
 // Radio Panel
 #define sRP_STDBY_COM1_FINE_DOWN_CR       "sim/radios/stby_com1_fine_down"
@@ -97,7 +98,7 @@ extern void *rpRun(void *ptr_thread_data);
 #define sRP_XPDR_ONES_DOWN_CR             "sim/transponder/transponder_ones_down"
 
 #define sRP_XPDR_CODE_DR                  "sim/cockpit/radios/transponder_code"
-#define sRP_QNH_CODE_DR                   "sim/cockpit2/gauges/actuators/barometer_setting_in_hg_pilot"
+#define sRP_QNH_CODE_DR                   "sim/cockpit/misc/barometer_setting"
 #define sRP_ADF1_FREQ_HZ_DR               "sim/cockpit/radios/adf1_freq_hz"
 #define sRP_ADF1_STDBY_FREQ_HZ_DR         "sim/cockpit/radios/adf1_stdby_freq_hz"
 #define sRP_ADF2_FREQ_HZ_DR               "sim/cockpit/radios/adf2_freq_hz"
