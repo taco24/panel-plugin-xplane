@@ -75,9 +75,15 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
 	gPanelBatteryOn = (XPLMGetDatai(gPanelBatteryOnDataRef));
 	gPanelGeneratorOn = (XPLMGetDatai(gPanelGeneratorOnDataRef));
 	gPanelAvionicsOn = (XPLMGetDatai(gPanelAvionicsOnDataRef));
-	mp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
-	rp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
-	cb_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+	if (gMpThreadData.stop == 0) {
+		mp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+	}
+	if (gRpThreadData.stop == 0) {
+		rp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+	}
+//	if (gCbThreadData.stop == 0) {
+//		cb_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+//	}
 	return FL_CB_INTERVAL; // call again next loop;
 }
 
@@ -98,6 +104,7 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 PLUGIN_API int XPluginEnable(void) {
 	XPLMDebugString("-> CP: XPluginEnable\n");
 
+	// Radio Panel
 	gRpThreadData.thread_id = gRpThreadID;
 	gRpThreadData.stop = 0;
 	gRpThreadReturnCode = pthread_create(&gRpThread, NULL, rpRun,

@@ -946,6 +946,7 @@ void *mcpRun(void *ptr_thread_data) {
 	int result = mcp_panel_open();
 	if (result < 0) {
 		XPLMDebugString("-> CP: mcp_controller.mcpRun: shutdown thread.\n");
+		gPtrThreadData->stop = 1;
 		pthread_exit(NULL);
 		return 0;
 	}

@@ -13,7 +13,7 @@
 
 enum {
 	HID_ERROR = -1,
-	VENDOR_ID = 0xF055,
+	CB_VENDOR_ID = 0xF055,
 	CB_PROD_ID = 0x5500,
 	CB_ERROR_THRESH = 40,
 	PANEL_CHECK_INTERVAL = 5
@@ -34,7 +34,7 @@ unsigned char cb_blank_panel[CB_OUT_BUF_SIZE] = {0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0
 int cb_panel_open() {
 	int res = 0;
 
-	cbHandle = hid_open(VENDOR_ID, CB_PROD_ID, NULL);
+	cbHandle = hid_open(CB_VENDOR_ID, CB_PROD_ID, NULL);
 
 	if (!cbHandle) {
 		XPLMDebugString("-> CP: cb_driver.panel_open: unable to open device.\n");

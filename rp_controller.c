@@ -222,7 +222,7 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
                              void *            inRefcon) {
 //	XPLMDebugString("-> CP: RadioPanelCommandHandler: start.\n");
 //	char Buffer[256];
-//	sprintf(Buffer,"Cmdh handler: 0x%08x, %d, 0x%08x\n", inCommand, inPhase, inRefcon);
+//	sprintf(Buffer,"Cmdh handler: %d, %d, %d\n", (int) inCommand, (int) inPhase, (int) inRefcon);
 //	XPLMDebugString(Buffer);
 	int status = CMD_PASS_EVENT;
 
@@ -239,11 +239,11 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
 		case RP_CMD_ACTV_COM1_COARSE_DOWN:
 		case RP_CMD_ACTV_COM1_COARSE_UP:
 			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
-			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
 			break;
 		case RP_CMD_COM1_STANDBY_FLIP:
 			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
-			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
+			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
 			break;
 		case RP_CMD_STDBY_COM2_FINE_DOWN:
 		case RP_CMD_STDBY_COM2_FINE_UP:
@@ -938,18 +938,18 @@ void *rpRun(void *ptr_thread_data) {
 		usleep(SLEEP_TIME * 2);
 #endif
 
-	rp_init();
-
 	gPtrThreadData = (struct rp_thread_data *) ptr_thread_data;
 
 	int result = rp_panel_open();
 	if (result < 0) {
 		XPLMDebugString("-> CP: rp_controller.rpRun: shutdown thread.\n");
+		gPtrThreadData->stop = 1;
 		pthread_exit(NULL);
 		return 0;
 	}
 	XPLMDebugString("-> CP: rp_controller.rpRun: panel opened.\n");
 	rp_panel_write(rp_blank_panel);
+	rp_init();
 	inReportBytesCount = rp_panel_read_non_blocking(buf);
 	// URB_FUNCTION_CLASS_INTERFACE request should be 0x01 instead of 0x09
 	rp_panel_write_empty();

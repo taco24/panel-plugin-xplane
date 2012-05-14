@@ -933,22 +933,24 @@ void *cbRun(void *ptr_thread_data) {
 	int i;
 
 #if IBM
-		Sleep(SLEEP_TIME * 2);
+		Sleep(SLEEP_TIME * 5);
 #else
-		usleep(SLEEP_TIME * 2);
+		usleep(SLEEP_TIME * 5);
 #endif
-
-	cb_init();
 
 	gPtrThreadData = (struct cb_thread_data *) ptr_thread_data;
 
 	int result = cb_panel_open();
 	if (result < 0) {
 		XPLMDebugString("-> CP: cb_controller.cbRun: shutdown thread.\n");
+		gPtrThreadData->stop = 1;
 		pthread_exit(NULL);
 		return 0;
 	}
 	XPLMDebugString("-> CP: cb_controller.cbRun: panel opened.\n");
+
+	// panel is open. now initialize datarefs.
+	cb_init();
 	cb_panel_write(cb_blank_panel);
 	inReportBytesCount = cb_panel_read_non_blocking(buf);
 	// URB_FUNCTION_CLASS_INTERFACE request should be 0x01 instead of 0x09
