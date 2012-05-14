@@ -24,6 +24,7 @@
 #include "mp_controller.h"
 #include "sp_controller.h"
 #include "mcp_controller.h"
+#include "cb_controller.h"
 
 enum {
     PLUGIN_PLANE_ID = 0
@@ -52,6 +53,11 @@ pthread_t gMcpThread;
 int gMcpThreadID = 2;
 int gMcpThreadReturnCode = 0;
 
+struct thread_data gCbThreadData;
+pthread_t gCbThread;
+int gCbThreadID = 2;
+int gCbThreadReturnCode = 0;
+
 XPLMDataRef gPanelBatteryOnDataRef = NULL;
 XPLMDataRef gPanelGeneratorOnDataRef = NULL;
 XPLMDataRef gPanelAvionicsOnDataRef = NULL;
@@ -71,6 +77,7 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
 	gPanelAvionicsOn = (XPLMGetDatai(gPanelAvionicsOnDataRef));
 	mp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
 	rp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+	cb_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
 	return FL_CB_INTERVAL; // call again next loop;
 }
 
@@ -138,6 +145,18 @@ PLUGIN_API int XPluginEnable(void) {
 		XPLMDebugString("-> CP: XPluginEnable: McpThread started.\n");
 	}
 
+	// Colomboard Panel
+	gCbThreadData.thread_id = gCbThreadID;
+	gCbThreadData.stop = 0;
+	gCbThreadReturnCode = pthread_create(&gCbThread, NULL, cbRun,
+			(void *) &gCbThreadData);
+	if (gCbThreadReturnCode) {
+		XPLMDebugString("-> CP: XPluginEnable: Could not start CbThread.\n");
+		return 0;
+	} else {
+		XPLMDebugString("-> CP: XPluginEnable: CbThread started.\n");
+	}
+
 	gPanelBatteryOnDataRef = XPLMFindDataRef(sPANEL_BATTERY_ON_DR);
 	gPanelGeneratorOnDataRef = XPLMFindDataRef(sPANEL_GENERATOR_ON_DR);
 	gPanelAvionicsOnDataRef = XPLMFindDataRef(sPANEL_AVIONICS_ON_DR);
@@ -151,6 +170,7 @@ PLUGIN_API void XPluginDisable(void) {
 	gMpThreadData.stop = 1;
 	gSpThreadData.stop = 1;
 	gMcpThreadData.stop = 1;
+	gCbThreadData.stop = 1;
 #if IBM
 	Sleep(500);
 #else

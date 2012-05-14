@@ -243,10 +243,16 @@ inline void mp_led_update(uint32_t x, uint32_t y, uint32_t s, uint32_t buttons, 
 }
 
 void mp_process_trimwheel() {
+	int i = 0;
 	if (gMpTrimCounterDown > 3) {
+		for (i = 0; i < gMpTrimCounterDown; i++) {
+			XPLMCommandOnce(gMpPitchTrimDnCmdRef);
+		}
 		gMpTrimCounterDown = 0;
-		XPLMCommandOnce(gMpPitchTrimDnCmdRef);
 	} else if (gMpTrimCounterUp > 3) {
+		for (i = 0; i < gMpTrimCounterDown; i++) {
+			XPLMCommandOnce(gMpPitchTrimUpCmdRef);
+		}
 		gMpTrimCounterUp = 0;
 	    XPLMCommandOnce(gMpPitchTrimUpCmdRef);
 	}
@@ -364,10 +370,12 @@ int mp_process(uint32_t msg) {
 		}
     }
 
-    if (readButtons && readButtons != buttonState) {
+    if (readButtons != buttonState) {
     	buttonState = readButtons;
     	if (readButtons == MP_READ_AP_BTN) {
+    		gMpAutopilotMode = XPLMGetDatai(gMpApAutopilotModeDataRef);
     		if (gMpAutopilotMode == 0) {
+    			XPLMCommandOnce(gMpApFlightDirectorOnCmdRef);
     			XPLMSetDatai(gMpApAutopilotModeDataRef, 1);
         		// Check Autothrottle
         		if (readAutoThrottle == MP_READ_THROTTLE_ON) {
@@ -376,8 +384,12 @@ int mp_process(uint32_t msg) {
         				XPLMCommandKeyStroke(xplm_key_otto_atr);
         			}
         		}
-    		} else {
-        		XPLMCommandOnce(gMpApFlightDirectorOffCmdRef);
+    		} else if (gMpAutopilotMode == 1) {
+    			XPLMCommandOnce(gMpApFlightDirectorOnCmdRef);
+    			XPLMSetDatai(gMpApAutopilotModeDataRef, 2);
+    		} else if (gMpAutopilotMode == 2) {
+    			XPLMSetDatai(gMpApAutopilotModeDataRef, 0);
+    			XPLMCommandOnce(gMpApFlightDirectorOffCmdRef);
     		}
     	} else if (readButtons == MP_READ_HDG_BTN) {
     		XPLMCommandOnce(gMpApHeadingCmdRef);
