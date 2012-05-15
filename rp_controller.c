@@ -215,6 +215,7 @@ uint32_t gRpNAV2DmeSpeedKts = 0;
 uint32_t gRpDmeSlaveSource = 0;
 
 static int powerOn = 0;
+static int com1fineinc = 0, com1finedec = 0, com1coarseinc = 0, com1coarsedec = 0;
 
 
 int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
@@ -388,7 +389,13 @@ void rp_process_coarse_right(uint32_t knobSelection) {
 	switch (knobSelection) {
 	case 0x000001:
 	case 0x000080:
-		XPLMCommandOnce(gRpStdbyCOM1CoarseUpCmdRef);
+		if (++com1coarseinc > 3) {
+			com1finedec = 0;
+			com1fineinc = 0;
+			com1coarsedec = 0;
+			com1coarseinc = 0;
+			XPLMCommandOnce(gRpStdbyCOM1CoarseUpCmdRef);
+		}
 		break;
 	case 0x000002:
 	case 0x000100:
@@ -428,7 +435,13 @@ void rp_process_coarse_left(uint32_t knobSelection) {
 	switch (knobSelection) {
 	case 0x000001:
 	case 0x000080:
-		XPLMCommandOnce(gRpStdbyCOM1CoarseDownCmdRef);
+		if (++com1coarsedec > 3) {
+			com1finedec = 0;
+			com1fineinc = 0;
+			com1coarsedec = 0;
+			com1coarseinc = 0;
+			XPLMCommandOnce(gRpStdbyCOM1CoarseDownCmdRef);
+		}
 		break;
 	case 0x000002:
 	case 0x000100:
@@ -467,7 +480,13 @@ void rp_process_fine_right(uint32_t knobSelection) {
 	switch (knobSelection) {
 	case 0x000001:
 	case 0x000080:
-		XPLMCommandOnce(gRpStdbyCOM1FineUpCmdRef);
+		if (++com1fineinc > 3) {
+			com1finedec = 0;
+			com1fineinc = 0;
+			com1coarsedec = 0;
+			com1coarseinc = 0;
+			XPLMCommandOnce(gRpStdbyCOM1FineUpCmdRef);
+		}
 		break;
 	case 0x000002:
 	case 0x000100:
@@ -512,7 +531,13 @@ void rp_process_fine_left(uint32_t knobSelection) {
 	switch (knobSelection) {
 	case 0x000001:
 	case 0x000080:
-		XPLMCommandOnce(gRpStdbyCOM1FineDownCmdRef);
+		if (++com1finedec > 3) {
+			com1finedec = 0;
+			com1fineinc = 0;
+			com1coarsedec = 0;
+			com1coarseinc = 0;
+			XPLMCommandOnce(gRpStdbyCOM1FineDownCmdRef);
+		}
 		break;
 	case 0x000002:
 	case 0x000100:

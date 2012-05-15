@@ -244,16 +244,18 @@ inline void mp_led_update(uint32_t x, uint32_t y, uint32_t s, uint32_t buttons, 
 
 void mp_process_trimwheel() {
 	int i = 0;
-	if (gMpTrimCounterDown > 3) {
+	if (gMpTrimCounterDown > 1) {
 		for (i = 0; i < gMpTrimCounterDown; i++) {
 			XPLMCommandOnce(gMpPitchTrimDnCmdRef);
 		}
 		gMpTrimCounterDown = 0;
-	} else if (gMpTrimCounterUp > 3) {
+		gMpTrimCounterUp = 0;
+	} else if (gMpTrimCounterUp > 1) {
 		for (i = 0; i < gMpTrimCounterDown; i++) {
 			XPLMCommandOnce(gMpPitchTrimUpCmdRef);
 		}
 		gMpTrimCounterUp = 0;
+		gMpTrimCounterDown = 0;
 	    XPLMCommandOnce(gMpPitchTrimUpCmdRef);
 	}
 }

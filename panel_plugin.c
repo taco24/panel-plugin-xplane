@@ -88,7 +88,7 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
 }
 
 // Callback for Error Tests
-void	SDK210TestsErrorCB(const char * msg)
+void	MyErrorCB(const char * msg)
 {
 	XPLMDebugString("================================================================\n");
 	XPLMDebugString("-> CP ERROR: ");
@@ -106,7 +106,7 @@ PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 	strcpy(outDesc, "panel 12.05.15");
 
 	// Register the callback for errors
-	XPLMSetErrorCallback(SDK210TestsErrorCB);
+	XPLMSetErrorCallback(MyErrorCB);
 
     XPLMRegisterFlightLoopCallback(PanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
 
