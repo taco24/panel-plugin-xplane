@@ -21,7 +21,7 @@
 #include "XPLMUtilities.h"
 
 // Radio panel
-enum CB_COMMANDS_MAP {
+enum {
 	CB_CMD_STDBY_COM1_FINE_DOWN,
 	CB_CMD_STDBY_COM1_FINE_UP,
 	CB_CMD_STDBY_COM1_COARSE_DOWN,

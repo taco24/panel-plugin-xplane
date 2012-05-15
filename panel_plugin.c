@@ -87,13 +87,26 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
 	return FL_CB_INTERVAL; // call again next loop;
 }
 
+// Callback for Error Tests
+void	SDK210TestsErrorCB(const char * msg)
+{
+	XPLMDebugString("================================================================\n");
+	XPLMDebugString("-> CP ERROR: ");
+	XPLMDebugString(msg);
+	XPLMDebugString("\n");
+	XPLMDebugString("----------------------------------------------------------------\n");
+}
+
 PLUGIN_API int XPluginStart(char * outName, char * outSig, char * outDesc) {
 	/* First we must fill in the passed in buffers to describe our
 	 * plugin to the plugin-system. */
 
 	strcpy(outName, "X-Plane Panel Controller");
 	strcpy(outSig, "panel.controller");
-	strcpy(outDesc, "panel 12.02.26");
+	strcpy(outDesc, "panel 12.05.15");
+
+	// Register the callback for errors
+	XPLMSetErrorCallback(SDK210TestsErrorCB);
 
     XPLMRegisterFlightLoopCallback(PanelFlightLoopCallback, FL_CB_INTERVAL, NULL);
 

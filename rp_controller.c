@@ -21,12 +21,12 @@
 #include "XPLMUtilities.h"
 
 // Radio panel
-enum RP_COMMANDS_MAP {
-	RP_CMD_STDBY_COM1_FINE_DOWN,
+enum {
+	RP_CMD_STDBY_COM1_FINE_DOWN = 0,
 	RP_CMD_STDBY_COM1_FINE_UP,
 	RP_CMD_STDBY_COM1_COARSE_DOWN,
 	RP_CMD_STDBY_COM1_COARSE_UP,
-	RP_CMD_ACTV_COM1_FINE_DOWN,
+	RP_CMD_ACTV_COM1_FINE_DOWN ,
 	RP_CMD_ACTV_COM1_FINE_UP,
 	RP_CMD_ACTV_COM1_COARSE_DOWN,
 	RP_CMD_ACTV_COM1_COARSE_UP,
@@ -242,8 +242,8 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
 			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
 			break;
 		case RP_CMD_COM1_STANDBY_FLIP:
-			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
-			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+			gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
+			gRpCOM1Freq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
 			break;
 		case RP_CMD_STDBY_COM2_FINE_DOWN:
 		case RP_CMD_STDBY_COM2_FINE_UP:
@@ -257,10 +257,10 @@ int RadioPanelCommandHandler(XPLMCommandRef    inCommand,
 		case RP_CMD_ACTV_COM2_COARSE_DOWN:
 		case RP_CMD_ACTV_COM2_COARSE_UP:
 			gRpCOM2StbyFreq = (XPLMGetDatai(gRpCOM2StdbyFreqHzDataRef));
-			gRpCOM2Freq = (XPLMGetDatai(gRpCOM2StdbyFreqHzDataRef));
+			gRpCOM2Freq = (XPLMGetDatai(gRpCOM2FreqHzDataRef));
 			break;
 		case RP_CMD_COM2_STANDBY_FLIP:
-			gRpCOM2StbyFreq = (XPLMGetDatai(gRpCOM2FreqHzDataRef));
+			gRpCOM2StbyFreq = (XPLMGetDatai(gRpCOM2StdbyFreqHzDataRef));
 			gRpCOM2Freq = (XPLMGetDatai(gRpCOM2FreqHzDataRef));
 			break;
 		case RP_CMD_STDBY_NAV1_FINE_DOWN:
@@ -671,16 +671,6 @@ void rp_init() {
 	gRpActvCOM1CoarseUpCmdRef         = XPLMFindCommand(sRP_ACTV_COM1_COARSE_UP_CR);
 	gRpCOM1StbyFlipCmdRef              = XPLMFindCommand(sRP_COM1_STBY_FLIP_CR);
 
-	gRpStdbyCOM2FineDownCmdRef         = XPLMFindCommand(sRP_STDBY_COM2_FINE_DOWN_CR);
-	gRpStdbyCOM2FineUpCmdRef           = XPLMFindCommand(sRP_STDBY_COM2_FINE_UP_CR);
-	gRpStdbyCOM2CoarseDownCmdRef       = XPLMFindCommand(sRP_STDBY_COM2_COARSE_DOWN_CR);
-	gRpStdbyCOM2CoarseUpCmdRef         = XPLMFindCommand(sRP_STDBY_COM2_COARSE_UP_CR);
-	gRpActvCOM2FineDownCmdRef         = XPLMFindCommand(sRP_ACTV_COM2_FINE_DOWN_CR);
-	gRpActvCOM2FineUpCmdRef           = XPLMFindCommand(sRP_ACTV_COM2_FINE_UP_CR);
-	gRpActvCOM2CoarseDownCmdRef       = XPLMFindCommand(sRP_ACTV_COM2_COARSE_DOWN_CR);
-	gRpActvCOM2CoarseUpCmdRef         = XPLMFindCommand(sRP_ACTV_COM2_COARSE_UP_CR);
-	gRpCOM2StbyFlipCmdRef              = XPLMFindCommand(sRP_COM2_STBY_FLIP_CR);
-
     XPLMRegisterCommandHandler(gRpStdbyCOM1FineDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_DOWN);
     XPLMRegisterCommandHandler(gRpStdbyCOM1FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_FINE_UP);
     XPLMRegisterCommandHandler(gRpStdbyCOM1CoarseDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM1_COARSE_DOWN);
@@ -696,6 +686,16 @@ void rp_init() {
 
     gRpCOM1StbyFreq = (XPLMGetDatai(gRpCOM1StdbyFreqHzDataRef));
     gRpCOM1Freq = (XPLMGetDatai(gRpCOM1FreqHzDataRef));
+
+	gRpStdbyCOM2FineDownCmdRef         = XPLMFindCommand(sRP_STDBY_COM2_FINE_DOWN_CR);
+	gRpStdbyCOM2FineUpCmdRef           = XPLMFindCommand(sRP_STDBY_COM2_FINE_UP_CR);
+	gRpStdbyCOM2CoarseDownCmdRef       = XPLMFindCommand(sRP_STDBY_COM2_COARSE_DOWN_CR);
+	gRpStdbyCOM2CoarseUpCmdRef         = XPLMFindCommand(sRP_STDBY_COM2_COARSE_UP_CR);
+	gRpActvCOM2FineDownCmdRef         = XPLMFindCommand(sRP_ACTV_COM2_FINE_DOWN_CR);
+	gRpActvCOM2FineUpCmdRef           = XPLMFindCommand(sRP_ACTV_COM2_FINE_UP_CR);
+	gRpActvCOM2CoarseDownCmdRef       = XPLMFindCommand(sRP_ACTV_COM2_COARSE_DOWN_CR);
+	gRpActvCOM2CoarseUpCmdRef         = XPLMFindCommand(sRP_ACTV_COM2_COARSE_UP_CR);
+	gRpCOM2StbyFlipCmdRef              = XPLMFindCommand(sRP_COM2_STBY_FLIP_CR);
 
     XPLMRegisterCommandHandler(gRpStdbyCOM2FineDownCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM2_FINE_DOWN);
     XPLMRegisterCommandHandler(gRpStdbyCOM2FineUpCmdRef, RadioPanelCommandHandler, CMD_HNDLR_PROLOG, (void *) RP_CMD_STDBY_COM2_FINE_UP);
@@ -713,7 +713,7 @@ void rp_init() {
     gRpCOM2StbyFreq = (XPLMGetDatai(gRpCOM2StdbyFreqHzDataRef));
     gRpCOM2Freq = (XPLMGetDatai(gRpCOM2FreqHzDataRef));
 
-	gRpStdbyNAV1FineDownCmdRef         = XPLMFindCommand(sRP_STDBY_NAV1_FINE_DOWN_CR);
+    gRpStdbyNAV1FineDownCmdRef         = XPLMFindCommand(sRP_STDBY_NAV1_FINE_DOWN_CR);
 	gRpStdbyNAV1FineUpCmdRef           = XPLMFindCommand(sRP_STDBY_NAV1_FINE_UP_CR);
 	gRpStdbyNAV1CoarseDownCmdRef       = XPLMFindCommand(sRP_STDBY_NAV1_COARSE_DOWN_CR);
 	gRpStdbyNAV1CoarseUpCmdRef         = XPLMFindCommand(sRP_STDBY_NAV1_COARSE_UP_CR);
