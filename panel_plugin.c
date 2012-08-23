@@ -81,9 +81,9 @@ float PanelFlightLoopCallback(float   inElapsedSinceLastCall,
 	if (gRpThreadData.stop == 0) {
 		rp_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
 	}
-//	if (gCbThreadData.stop == 0) {
-//		cb_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
-//	}
+	if (gCbThreadData.stop == 0) {
+		cb_process_power(gPanelBatteryOn, gPanelGeneratorOn, gPanelAvionicsOn);
+	}
 	return FL_CB_INTERVAL; // call again next loop;
 }
 

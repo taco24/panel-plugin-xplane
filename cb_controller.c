@@ -592,7 +592,7 @@ int cb_process(uint32_t msg) {
     //sprintf(tmp, "-> CP: cb_controller.cb_process: msg: %d\n", msg);
 	//XPLMDebugString(tmp);
 	int res = 0;
-    gUpperKnob = msg & CB_READ_UPPER_KNOB_MODE_MASK;
+    gUpperKnob = 0x000001;
     gLowerKnob = msg & CB_READ_LOWER_KNOB_MODE_MASK;
     uint32_t upperFineTuning = msg & CB_READ_UPPER_FINE_TUNING_MASK;
     uint32_t upperCoarseTuning = msg & CB_READ_UPPER_COARSE_TUNING_MASK;
@@ -833,7 +833,7 @@ void cb_prepare_write_buffer(int i, int j) {
 	case 0x000080:
 		tmp1 = dec2bcd(gCbCOM1Freq, 5);
 		tmp2 = dec2bcd(gCbCOM1StbyFreq, 5);
-		upperDecimal = 0xD0;
+		upperDecimal = 0x00;
 		break;
 	case 0x000002:
 	case 0x000100:
@@ -954,7 +954,8 @@ void *cbRun(void *ptr_thread_data) {
 	cb_panel_write(cb_blank_panel);
 	inReportBytesCount = cb_panel_read_non_blocking(buf);
 	// URB_FUNCTION_CLASS_INTERFACE request should be 0x01 instead of 0x09
-	cb_panel_write_empty();
+	//cb_panel_write_empty();
+	cb_panel_write(cb_zero_panel);
 	inReportBytesCount = cb_panel_read_non_blocking(buf);
 	cb_panel_write(cb_zero_panel);
 	inReportBytesCount = cb_panel_read_non_blocking(buf);

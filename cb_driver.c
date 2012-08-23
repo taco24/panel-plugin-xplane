@@ -27,8 +27,8 @@ unsigned char cb_zero_panel[CB_OUT_BUF_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0xFF, 0xFF};
 
-unsigned char cb_blank_panel[CB_OUT_BUF_SIZE] = {0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+unsigned char cb_blank_panel[CB_OUT_BUF_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 int cb_panel_open() {
@@ -45,11 +45,11 @@ int cb_panel_open() {
     sprintf(tmp, "-> CP: cb_driver.panel_open: Manufacturer String %ls\n", wstr);
 	XPLMDebugString(tmp);
 
-	res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
-	if (res < 0) {
-	    sprintf(tmp, "-> CP: cb_driver.panel_open: Error: %ls\n", hid_error(cbHandle));
-		XPLMDebugString(tmp);
-	}
+//	res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
+//	if (res < 0) {
+//	    sprintf(tmp, "-> CP: cb_driver.panel_open: Error: %ls\n", hid_error(cbHandle));
+//		XPLMDebugString(tmp);
+//	}
 	return 0;
 }
 
@@ -110,11 +110,11 @@ int cb_panel_read_non_blocking(unsigned char *buf) {
 int cb_panel_close() {
 	int res = 0;
 	if (cbHandle) {
-		res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
-		if (res < 0) {
-		    sprintf(tmp, "-> CP: cb_driver.panel_close: Error: %ls\n", hid_error(cbHandle));
-			XPLMDebugString(tmp);
-		}
+//		res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
+//		if (res < 0) {
+//		    sprintf(tmp, "-> CP: cb_driver.panel_close: Error: %ls\n", hid_error(cbHandle));
+//			XPLMDebugString(tmp);
+//		}
 		hid_close(cbHandle);
 		XPLMDebugString("-> CP: cb_driver.panel_close: panel closed.\n");
 		cbHandle = NULL;
