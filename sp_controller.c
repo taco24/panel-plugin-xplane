@@ -798,7 +798,7 @@ void sp_update_datarefs() {
 }
 
 void sp_init() {
-	XPLMDebugString("-> CP: sp_controller.sp_init.\n");
+//	XPLMDebugString("-> CP: sp_controller.sp_init.\n");
     gSpMagnetosOff1CmdRef  = XPLMFindCommand(sSP_MAGNETOS_OFF_1_CR);
     gSpMagnetosOff2CmdRef  = XPLMFindCommand(sSP_MAGNETOS_OFF_2_CR);
     gSpMagnetosOff3CmdRef  = XPLMFindCommand(sSP_MAGNETOS_OFF_3_CR);

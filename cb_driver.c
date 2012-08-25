@@ -23,13 +23,14 @@ enum {
 hid_device *cbHandle;
 static char tmp[100];
 unsigned char cb_in_buf[CB_IN_BUF_SIZE];
-unsigned char cb_zero_panel[CB_OUT_BUF_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0xFF, 0xFF};
+unsigned char cb_zero_panel[CB_OUT_BUF_SIZE] = { 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,
+		0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-unsigned char cb_blank_panel[CB_OUT_BUF_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+unsigned char cb_blank_panel[CB_OUT_BUF_SIZE] = { 0x0F, 0x0F, 0x0F, 0x0F, 0x0F,
+		0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+static unsigned char tempInbuf[100];
 
 int cb_panel_open() {
 	int res = 0;
@@ -42,24 +43,28 @@ int cb_panel_open() {
 	}
 	wchar_t wstr[MAX_STR];
 	res = hid_get_manufacturer_string(cbHandle, wstr, MAX_STR);
-    sprintf(tmp, "-> CP: cb_driver.panel_open: Manufacturer String %ls\n", wstr);
+	sprintf(tmp, "-> CP: cb_driver.panel_open: Manufacturer String %ls\n", wstr);
 	XPLMDebugString(tmp);
 
-//	res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
-//	if (res < 0) {
-//	    sprintf(tmp, "-> CP: cb_driver.panel_open: Error: %ls\n", hid_error(cbHandle));
-//		XPLMDebugString(tmp);
-//	}
+	cb_panel_read_non_blocking(tempInbuf);
+	cb_panel_read_non_blocking(tempInbuf);
+	cb_panel_read_non_blocking(tempInbuf);
+	cb_panel_write(cb_blank_panel);
+	//	res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
+	//	if (res < 0) {
+	//	    sprintf(tmp, "-> CP: cb_driver.panel_open: Error: %ls\n", hid_error(cbHandle));
+	//		XPLMDebugString(tmp);
+	//	}
 	return 0;
 }
 
 int cb_panel_write(unsigned char buf[]) {
 	int res = 0;
 	if (cbHandle) {
-		res = hid_write(cbHandle, buf,
-				CB_OUT_BUF_SIZE);
+		res = hid_write(cbHandle, buf, CB_OUT_BUF_SIZE);
 		if (res < 0) {
-		    sprintf(tmp, "-> CP: cb_driver.panel_write: Error: %ls\n", hid_error(cbHandle));
+			sprintf(tmp, "-> CP: cb_driver.panel_write: Error: %ls\n",
+					hid_error(cbHandle));
 			XPLMDebugString(tmp);
 		}
 	}
@@ -70,16 +75,15 @@ int cb_panel_write_empty() {
 	int res = 0;
 	unsigned char cb_empty_buf[0];
 	if (cbHandle) {
-		res = hid_send_feature_report(cbHandle, cb_empty_buf,
-				0);
+		res = hid_send_feature_report(cbHandle, cb_empty_buf, 0);
 		if (res < 0) {
-		    sprintf(tmp, "-> CP: cb_driver.panel_write_empty: Error: %ls\n", hid_error(cbHandle));
+			sprintf(tmp, "-> CP: cb_driver.panel_write_empty: Error: %ls\n",
+					hid_error(cbHandle));
 			XPLMDebugString(tmp);
 		}
 	}
 	return res;
 }
-
 
 int cb_panel_read_blocking(unsigned char *buf) {
 	int res = 0;
@@ -87,7 +91,8 @@ int cb_panel_read_blocking(unsigned char *buf) {
 		hid_set_nonblocking(cbHandle, 0);
 		res = hid_read_timeout(cbHandle, buf, CB_IN_BUF_SIZE, 100);
 		if (res < 0) {
-		    sprintf(tmp, "-> CP: cb_driver.panel_read_blocking: Error: %ls\n", hid_error(cbHandle));
+			sprintf(tmp, "-> CP: cb_driver.panel_read_blocking: Error: %ls\n",
+					hid_error(cbHandle));
 			XPLMDebugString(tmp);
 		}
 	}
@@ -100,7 +105,9 @@ int cb_panel_read_non_blocking(unsigned char *buf) {
 		hid_set_nonblocking(cbHandle, 1);
 		res = hid_read(cbHandle, buf, CB_IN_BUF_SIZE);
 		if (res < 0) {
-		    sprintf(tmp, "-> CP: cb_driver.panel_read_non_blocking: Error: %ls\n", hid_error(cbHandle));
+			sprintf(tmp,
+					"-> CP: cb_driver.panel_read_non_blocking: Error: %ls\n",
+					hid_error(cbHandle));
 			XPLMDebugString(tmp);
 		}
 	}
@@ -110,11 +117,12 @@ int cb_panel_read_non_blocking(unsigned char *buf) {
 int cb_panel_close() {
 	int res = 0;
 	if (cbHandle) {
-//		res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
-//		if (res < 0) {
-//		    sprintf(tmp, "-> CP: cb_driver.panel_close: Error: %ls\n", hid_error(cbHandle));
-//			XPLMDebugString(tmp);
-//		}
+		cb_panel_write(cb_blank_panel);
+		//		res = hid_send_feature_report(cbHandle, cb_blank_panel, CB_OUT_BUF_SIZE);
+		//		if (res < 0) {
+		//		    sprintf(tmp, "-> CP: cb_driver.panel_close: Error: %ls\n", hid_error(cbHandle));
+		//			XPLMDebugString(tmp);
+		//		}
 		hid_close(cbHandle);
 		XPLMDebugString("-> CP: cb_driver.panel_close: panel closed.\n");
 		cbHandle = NULL;

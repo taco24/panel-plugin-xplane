@@ -685,7 +685,7 @@ void rp_update_datarefs() {
 }
 
 void rp_init() {
-	XPLMDebugString("-> CP: rp_controller.rp_init.\n");
+//	XPLMDebugString("-> CP: rp_controller.rp_init.\n");
 	gRpStdbyCOM1FineDownCmdRef         = XPLMFindCommand(sRP_STDBY_COM1_FINE_DOWN_CR);
 	gRpStdbyCOM1FineUpCmdRef           = XPLMFindCommand(sRP_STDBY_COM1_FINE_UP_CR);
 	gRpStdbyCOM1CoarseDownCmdRef       = XPLMFindCommand(sRP_STDBY_COM1_COARSE_DOWN_CR);

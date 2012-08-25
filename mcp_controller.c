@@ -797,7 +797,7 @@ void mcp_update_datarefs() {
 }
 
 void mcp_init() {
-	XPLMDebugString("-> CP: mcp_controller.mcp_init.\n");
+//	XPLMDebugString("-> CP: mcp_controller.mcp_init.\n");
 
     gMcpAltDnCmdRef          = XPLMFindCommand(sMCP_ALTITUDE_DOWN_CR);
     gMcpAltUpCmdRef          = XPLMFindCommand(sMCP_ALTITUDE_UP_CR);

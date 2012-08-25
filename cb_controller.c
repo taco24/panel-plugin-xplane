@@ -592,43 +592,45 @@ int cb_process(uint32_t msg) {
     //sprintf(tmp, "-> CP: cb_controller.cb_process: msg: %d\n", msg);
 	//XPLMDebugString(tmp);
 	int res = 0;
+	int i;
     gUpperKnob = 0x000001;
-    gLowerKnob = msg & CB_READ_LOWER_KNOB_MODE_MASK;
     uint32_t upperFineTuning = msg & CB_READ_UPPER_FINE_TUNING_MASK;
     uint32_t upperCoarseTuning = msg & CB_READ_UPPER_COARSE_TUNING_MASK;
-    uint32_t lowerFineTuning = msg & CB_READ_LOWER_FINE_TUNING_MASK;
-    uint32_t lowerCoarseTuning = msg & CB_READ_LOWER_COARSE_TUNING_MASK;
     uint32_t upperStby = msg & CB_READ_UPPER_ACT_STBY;
-    uint32_t lowerStby = msg & CB_READ_LOWER_ACT_STBY;
 
-    if (upperCoarseTuning || upperFineTuning) {
-		if (upperCoarseTuning == CB_READ_UPPER_COARSE_RIGHT) {
-			cb_process_coarse_right(gUpperKnob);
-		} else if (upperCoarseTuning == CB_READ_UPPER_COARSE_LEFT) {
-			cb_process_coarse_left(gUpperKnob);
-		} else if (upperFineTuning == CB_READ_UPPER_FINE_RIGHT) {
-			cb_process_fine_right(gUpperKnob);
-		} else if (upperFineTuning == CB_READ_UPPER_FINE_LEFT) {
-			cb_process_fine_left(gUpperKnob);
+    if (upperFineTuning && CB_READ_UPPER_FINE_RIGHT) {
+    	uint32_t msg2 = upperFineTuning & CB_READ_UPPER_FINE_RIGHT;
+    	uint8_t c1 = (int) (msg2 >> 20);
+		for (i = 0; i < c1; i++) {
+			XPLMCommandOnce(gCbStdbyCOM1FineUpCmdRef);
 		}
     }
+    if (upperFineTuning && CB_READ_UPPER_FINE_LEFT) {
+    	uint32_t msg2 = upperFineTuning & CB_READ_UPPER_FINE_LEFT;
+    	uint8_t c1 = (msg2 >> 16);
+		for (i = 0; i < c1; i++) {
+			XPLMCommandOnce(gCbStdbyCOM1FineDownCmdRef);
+		}
+    }
+    if (upperCoarseTuning && CB_READ_UPPER_COARSE_RIGHT) {
+    	uint32_t msg2 = upperCoarseTuning & CB_READ_UPPER_COARSE_RIGHT;
+    	uint8_t c1 = (msg2 >> 12);
+		for (i = 0; i < c1; i++) {
+			XPLMCommandOnce(gCbStdbyCOM1CoarseUpCmdRef);
+		}
+    }
+    if (upperCoarseTuning && CB_READ_UPPER_COARSE_LEFT) {
+    	uint32_t msg2 = upperCoarseTuning & CB_READ_UPPER_COARSE_LEFT;
+    	uint8_t c1 = (msg2 >> 8);
+		for (i = 0; i < c1; i++) {
+			XPLMCommandOnce(gCbStdbyCOM1CoarseDownCmdRef);
+		}
+    }
+
     if (upperStby) {
     	cb_process_switch(gUpperKnob);
     }
-    if (lowerCoarseTuning || lowerFineTuning) {
-		if (lowerCoarseTuning == CB_READ_LOWER_COARSE_RIGHT) {
-			cb_process_coarse_right(gLowerKnob);
-		} else if (lowerCoarseTuning == CB_READ_LOWER_COARSE_LEFT) {
-			cb_process_coarse_left(gLowerKnob);
-		} else if (lowerFineTuning == CB_READ_LOWER_FINE_RIGHT) {
-			cb_process_fine_right(gLowerKnob);
-		} else if (lowerFineTuning == CB_READ_LOWER_FINE_LEFT) {
-			cb_process_fine_left(gLowerKnob);
-		}
-    }
-    if (lowerStby) {
-    	cb_process_switch(gLowerKnob);
-    }
+
     return res;
 }
 
@@ -660,7 +662,7 @@ void cb_update_datarefs() {
 }
 
 void cb_init() {
-	XPLMDebugString("-> CP: cb_controller.cb_init.\n");
+//	XPLMDebugString("-> CP: cb_controller.cb_init.\n");
 	gCbStdbyCOM1FineDownCmdRef         = XPLMFindCommand(sCB_STDBY_COM1_FINE_DOWN_CR);
 	gCbStdbyCOM1FineUpCmdRef           = XPLMFindCommand(sCB_STDBY_COM1_FINE_UP_CR);
 	gCbStdbyCOM1CoarseDownCmdRef       = XPLMFindCommand(sCB_STDBY_COM1_COARSE_DOWN_CR);
@@ -951,14 +953,20 @@ void *cbRun(void *ptr_thread_data) {
 
 	// panel is open. now initialize datarefs.
 	cb_init();
-	cb_panel_write(cb_blank_panel);
 	inReportBytesCount = cb_panel_read_non_blocking(buf);
-	// URB_FUNCTION_CLASS_INTERFACE request should be 0x01 instead of 0x09
-	//cb_panel_write_empty();
-	cb_panel_write(cb_zero_panel);
-	inReportBytesCount = cb_panel_read_non_blocking(buf);
-	cb_panel_write(cb_zero_panel);
-	inReportBytesCount = cb_panel_read_non_blocking(buf);
+	if (inReportBytesCount == 3) {
+		counter2++;
+		uint32_t msg = 0;
+		msg += buf[2] << 16;
+		msg += buf[1] << 8;
+		msg += buf[0];
+		cb_process(msg);
+	} else {
+		cb_process(0);
+		for (i = 0; i < CB_OUT_BUF_SIZE; i++) {
+			writeBufPrev[i] = i;
+		}
+	}
 
 	last_mainloop_idle = sys_time_clock_get_time_usec();
 	// while stop == 0 calculate position.

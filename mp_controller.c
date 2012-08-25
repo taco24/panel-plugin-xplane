@@ -459,7 +459,7 @@ void mp_update_datarefs() {
 }
 
 void mp_init() {
-	XPLMDebugString("-> CP: mp_controller.mp_init.\n");
+//	XPLMDebugString("-> CP: mp_controller.mp_init.\n");
 
     gMpAltDnCmdRef          = XPLMFindCommand(sMP_ALTITUDE_DOWN_CR);
     gMpAltUpCmdRef          = XPLMFindCommand(sMP_ALTITUDE_UP_CR);
